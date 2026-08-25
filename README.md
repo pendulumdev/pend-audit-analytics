@@ -70,8 +70,9 @@ npm install github:pendulumdev/pend-analytics-audit#v0.1.0
 ```
 
 Installing from git compiles `dist/` on install via the `prepare` script, so
-both the CLI and the `./types` export resolve. Publication to npm under the
-`@pendulumdev` scope is the intended next step; see [ROADMAP.md](ROADMAP.md).
+both the CLI and the `./types` export resolve. Distribution is git tags and
+GitHub Releases; npm under `@pendulumdev` is not scheduled. See
+[ROADMAP.md](ROADMAP.md).
 
 From a clone:
 

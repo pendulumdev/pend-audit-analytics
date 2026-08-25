@@ -28,10 +28,9 @@ Installation is currently from a git tag:
 npm install github:pendulumdev/pend-analytics-audit#v0.1.0
 ```
 
-Publishing to npm under the `@pendulumdev` scope is intended. The package
-manifest and release workflow are already shaped for it, so it is a small
-change rather than a migration. Until then, the annotated tag is the release,
-and consumers should pin one rather than track a branch.
+Distribution is git tags and GitHub Releases. Consumers should pin an
+annotated tag rather than track a branch. Publishing to npm under the
+`@pendulumdev` scope is not scheduled.
 
 ## Stability
 
