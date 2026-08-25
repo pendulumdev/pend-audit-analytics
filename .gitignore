@@ -1,0 +1,16 @@
+/node_modules
+/dist
+/analytics-out
+/analytics.toml
+.env
+.env.*
+*.log
+.DS_Store
+*.tsbuildinfo
+*.tgz
+# Google service-account keys
+*-credentials.json
+service-account*.json
+*-sa.json
+gsc-*.json
+ga4-*.json

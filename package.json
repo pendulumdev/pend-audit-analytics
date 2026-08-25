@@ -1,0 +1,83 @@
+{
+  "name": "@pendulumdev/analytics",
+  "version": "0.1.0",
+  "description": "Pendulum Search Console and GA4 analytics CLI (JSON run.json output)",
+  "keywords": [
+    "analytics",
+    "search-console",
+    "ga4",
+    "pendulum"
+  ],
+  "license": "MIT",
+  "author": "Pendulum Development Ltd",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pendulumdev/pend-analytics-audit.git"
+  },
+  "homepage": "https://github.com/pendulumdev/pend-analytics-audit#readme",
+  "bugs": {
+    "url": "https://github.com/pendulumdev/pend-analytics-audit/issues"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.js",
+      "default": "./dist/types.js"
+    }
+  },
+  "bin": {
+    "pend-analytics": "dist/cli.js",
+    "pend-analytics-mcp": "dist/mcp/server.js"
+  },
+  "files": [
+    "dist",
+    "examples",
+    "docs",
+    "SKILL.md",
+    "README.md",
+    "ROADMAP.md",
+    "SECURITY.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node scripts/run-tests.mjs",
+    "lint": "biome check",
+    "format": "biome check --write",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
+    "build": "tsc",
+    "dev": "tsx src/cli.ts",
+    "start": "node dist/cli.js",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "commander": "^14.0.3",
+    "google-auth-library": "^10.9.1",
+    "smol-toml": "^1.7.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.9",
+    "@types/node": "^26.1.2",
+    "tsx": "^4.23.5",
+    "typescript": "^7.0.2"
+  },
+  "typesVersions": {
+    "*": {
+      "types": [
+        "dist/types.d.ts"
+      ]
+    }
+  }
+}

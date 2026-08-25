@@ -1,0 +1,14 @@
+// Tests and scripts run through tsx, which strips types without checking them,
+// so without this config a type error in a test is invisible until it becomes a
+// runtime failure. Separate from tsconfig.json because those files must never be
+// emitted to dist.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,23 @@
+# Annotated pend-analytics config example.
+# Copy via `pend-analytics init`, then change project, baseUrl and property
+# ids to your own. Every URL below points at example.com on purpose, so
+# running this file unchanged audits nothing real.
+
+project = "Example Project"
+standard = "Pendulum_Analytics_v1"
+baseUrl = "https://example.com"
+outDir = "analytics-out"
+
+# Search Console / GA4 pull (unscored). Full setup: docs/analytics.md
+[analytics]
+enabled = true
+# credentialsPath = ""          # empty -> GOOGLE_APPLICATION_CREDENTIALS
+rangeDays = 28
+comparePrevious = true
+# observeEvents = false         # Chromium collect intercept; or ANALYTICS_OBSERVE=1
+
+[analytics.searchConsole]
+siteUrl = "sc-domain:example.com"
+
+[analytics.ga4]
+propertyId = "123456789"

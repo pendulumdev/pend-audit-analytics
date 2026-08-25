@@ -1,0 +1,66 @@
+pend-analytics (@pendulumdev/analytics)
+Copyright 2026 Pendulum Development Ltd
+
+This product is licensed under the MIT License. See LICENSE.
+
+It depends on third-party software under other licenses. No third-party source
+is vendored in this repository; all of the below are resolved by the package
+manager at install time and are used unmodified.
+
+--------------------------------------------------------------------------------
+google-auth-library - Apache-2.0
+https://github.com/googleapis/google-auth-library-nodejs
+
+Copyright Google LLC. Used to exchange a service account key for read-only
+Search Console and Analytics tokens. Pulls in gaxios, gcp-metadata and
+google-logging-utils, all Apache-2.0 and all from the same project.
+
+This project is not affiliated with or endorsed by Google. Search Console,
+Analytics, PageSpeed Insights and CrUX are Google services, used through their
+public APIs under Google's own terms.
+
+--------------------------------------------------------------------------------
+commander - MIT             https://github.com/tj/commander.js
+smol-toml - BSD-3-Clause    https://github.com/squirrelchat/smol-toml
+zod - MIT                   https://github.com/colinhacks/zod
+@modelcontextprotocol/sdk - MIT
+                            https://github.com/modelcontextprotocol/typescript-sdk
+
+Reached transitively through google-auth-library:
+
+jws, jwa - MIT              https://github.com/auth0/node-jws
+json-bigint - MIT           https://github.com/sidorares/json-bigint
+bignumber.js - MIT          https://github.com/MikeMcl/bignumber.js
+node-fetch - MIT            https://github.com/node-fetch/node-fetch
+extend - MIT                https://github.com/justmoon/node-extend
+debug, ms - MIT             https://github.com/debug-js/debug
+agent-base - MIT            https://github.com/TooTallNate/proxy-agents
+https-proxy-agent - MIT     https://github.com/TooTallNate/proxy-agents
+ecdsa-sig-formatter - Apache-2.0
+                            https://github.com/Brightspace/node-ecdsa-sig-formatter
+google-logging-utils - Apache-2.0
+                            https://github.com/googleapis/nodejs-logging
+buffer-equal-constant-time - BSD-3-Clause
+                            https://github.com/goinstant/buffer-equal-constant-time
+
+The remaining transitive packages - base64-js, data-uri-to-buffer, fetch-blob,
+formdata-polyfill, node-domexception, safe-buffer - are all MIT. They arrive
+through node-fetch and impose no notice obligation beyond retaining their own
+license text, which npm keeps in place under node_modules.
+
+--------------------------------------------------------------------------------
+Playwright - Apache-2.0 (optional, not a required dependency)
+https://github.com/microsoft/playwright
+
+Used only when observe is opted in (`observeEvents` or ANALYTICS_OBSERVE).
+Chromium itself is distributed under the BSD 3-Clause License with additional
+terms; see https://chromium.googlesource.com/chromium/src/+/main/LICENSE
+
+Browser binaries are downloaded by `npx playwright install`, not distributed
+with this package. Playwright is not listed in package.json dependencies.
+
+--------------------------------------------------------------------------------
+For a complete, current inventory of dependency licenses:
+
+    npm ls --omit=dev --all
+    npx license-checker --production --summary

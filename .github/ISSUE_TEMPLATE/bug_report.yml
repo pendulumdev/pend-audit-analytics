@@ -1,0 +1,60 @@
+name: Bug report
+description: A pull failed, an insight is wrong, or the CLI misbehaved
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For security issues, do not open an issue - see
+        [SECURITY.md](../blob/main/SECURITY.md).
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Include the relevant slice of `run.json` if you have one.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true
+
+  - type: input
+    id: url
+    attributes:
+      label: Site or property
+      description: Only if it is public. Leave blank otherwise.
+
+  - type: dropdown
+    id: command
+    attributes:
+      label: Command
+      options:
+        - pend-analytics audit
+        - pend-analytics init
+        - pend-analytics mcp
+        - other
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Command and config
+      description: |
+        The exact command, and your analytics.toml with anything private
+        removed. Remove any service account path, Search Console property
+        or GA4 property ID you would rather not publish.
+      render: shell
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `pend-analytics --version`, plus your Node version.
+    validations:
+      required: true

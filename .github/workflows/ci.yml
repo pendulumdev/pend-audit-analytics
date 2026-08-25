@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["20", "22"]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      # .npmrc sets engine-strict, so a dependency that outgrows the declared
+      # Node floor fails here instead of printing EBADENGINE and passing.
+      - run: npm ci
+
+      # Covers src, test and scripts. tsx strips types without checking them, so
+      # tests are only typechecked here.
+      - name: Typecheck
+        run: npm run typecheck
+
+      # Formatting and lint rules together. Fails on a diff, so `npm run format`
+      # is the fix.
+      - name: Lint
+        run: npm run lint
+
+      # Network and browser tests skip themselves, so no Chromium download is
+      # needed here.
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      # fetch-depth: 0 is load-bearing. The default shallow clone would leave
+      # gitleaks scanning a single commit, which is not a history scan.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # The gitleaks CLI is MIT; the GitHub Action of the same name needs a paid
+      # licence for organisations. Pinned so a new upstream rule cannot turn a
+      # green build red without us choosing it.
+      - name: Scan full history for secrets
+        env:
+          GITLEAKS_VERSION: 8.30.1
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz gitleaks
+          # --redact so a finding never puts the secret itself in the CI log.
+          ./gitleaks git --log-opts="--all" --redact --no-banner
+
+  hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Reject Unicode dashes
+        run: |
+          if grep -rlP '[\x{2013}\x{2014}]' \
+            --include='*.ts' --include='*.md' --include='*.yaml' \
+            --include='*.yml' --include='*.json' --include='*.toml' \
+            . ; then
+            echo "::error::Unicode en/em dash found. Use ASCII hyphens."
+            exit 1
+          fi
+
+      # Stray console.log and focused tests are the linter's job now
+      # (noConsole, noFocusedTests), so this job only guards prose.
