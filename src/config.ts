@@ -76,6 +76,9 @@ function normalizeConfig(
   if (merged.ga4 == null && raw.ga4 != null) {
     merged.ga4 = raw.ga4;
   }
+  if (merged.rivals == null && raw.rivals != null) {
+    merged.rivals = raw.rivals;
+  }
   if (merged.enabled == null) merged.enabled = true;
 
   const analytics = parseAnalytics(merged, source);
@@ -146,6 +149,14 @@ function parseAnalytics(raw: Record<string, unknown>, source: string): Analytics
     ga4 = { propertyId };
   }
 
+  let rivals: string[] | undefined;
+  if (raw.rivals != null) {
+    if (!Array.isArray(raw.rivals) || raw.rivals.some((row) => typeof row !== "string")) {
+      throw new Error(`${source}: analytics.rivals must be an array of strings`);
+    }
+    rivals = [...new Set(raw.rivals.map((row) => row.trim()).filter(Boolean))];
+  }
+
   if (enabled && !searchConsole && !ga4) {
     throw new Error(
       `${source}: analytics.enabled requires analytics.searchConsole and/or analytics.ga4`,
@@ -162,6 +173,7 @@ function parseAnalytics(raw: Record<string, unknown>, source: string): Analytics
     ...(endDate !== undefined && { endDate }),
     ...(searchConsole !== undefined && { searchConsole }),
     ...(ga4 !== undefined && { ga4 }),
+    ...(rivals !== undefined && { rivals }),
   };
 }
 

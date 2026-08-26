@@ -5,6 +5,7 @@ import {
   eventNamesFromCollectUrl,
   eventNamesFromDataLayer,
   isGaCollectUrl,
+  observeEventsOnUrls,
   shouldObserveEvents,
   tallyObserved,
 } from "../../src/analytics/observe.js";
@@ -120,5 +121,14 @@ describe("shouldObserveEvents", () => {
       if (prevCompat === undefined) delete process.env.SEO_ANALYTICS_OBSERVE;
       else process.env.SEO_ANALYTICS_OBSERVE = prevCompat;
     }
+  });
+});
+
+describe("observeEventsOnUrls", () => {
+  it("skips when playwright is not installed", async () => {
+    const result = await observeEventsOnUrls(["https://example.com/"]);
+    assert.equal(result.skipped, true);
+    assert.equal(result.error, undefined);
+    assert.deepEqual(result.observed, []);
   });
 });

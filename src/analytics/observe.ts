@@ -170,12 +170,18 @@ async function observeOnePage(
  * is not inflated. Caller must gate with `shouldObserveEvents`.
  * Playwright is an optional runtime dependency, loaded only when this runs.
  */
+function playwrightUnavailable(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /Cannot find (?:package|module) ['"]playwright['"]/i.test(message);
+}
+
 export async function observeEventsOnUrls(
   urls: string[],
   opts?: { settleMs?: number },
 ): Promise<{
   observed: Array<{ name: string; count: number }>;
   error?: string;
+  skipped?: boolean;
 }> {
   const unique = [...new Set(urls.map((u) => u.trim()).filter(Boolean))].slice(
     0,
@@ -206,6 +212,9 @@ export async function observeEventsOnUrls(
       }
     }
   } catch (err) {
+    if (playwrightUnavailable(err)) {
+      return { observed: [], skipped: true };
+    }
     return {
       observed: tallyObserved(names),
       error: err instanceof Error ? err.message : String(err),

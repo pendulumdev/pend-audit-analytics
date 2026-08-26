@@ -27,6 +27,8 @@ export interface AnalyticsConfig {
    * so client GA4 is not inflated. Off unless set, or ANALYTICS_OBSERVE=1.
    */
   observeEvents?: boolean;
+  /** Named rival https origins. Public HTML + CrUX only. */
+  rivals?: string[];
 }
 
 export interface AnalyticsEngineConfig {
@@ -131,7 +133,7 @@ export interface AnalyticsInsight {
 }
 
 export interface AnalyticsError {
-  source: "gsc" | "ga4" | "auth" | "tags" | "observe" | "crux" | "psi";
+  source: "gsc" | "ga4" | "auth" | "tags" | "observe" | "crux" | "psi" | "rival";
   message: string;
 }
 
@@ -252,6 +254,23 @@ export interface PsiLabBundle {
   pages: PsiPageRow[];
 }
 
+export interface RivalPageObservation {
+  url: string;
+  title?: string;
+  description?: string;
+  h1?: string;
+  schemaTypes?: string[];
+  wordCount?: number;
+  headingCount?: number;
+}
+
+export interface RivalOriginObservation {
+  host: string;
+  pages: RivalPageObservation[];
+  crux?: CruxOriginBundle;
+  error?: string;
+}
+
 export interface AnalyticsBundle {
   range: AnalyticsRange;
   gsc?: GscAnalyticsBundle;
@@ -260,6 +279,7 @@ export interface AnalyticsBundle {
   events?: GoogleSetupEventsBundle;
   crux?: CruxOriginBundle;
   psi?: PsiLabBundle;
+  rivals?: RivalOriginObservation[];
   insights: AnalyticsInsight[];
   errors?: AnalyticsError[];
 }

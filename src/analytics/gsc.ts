@@ -19,7 +19,7 @@ interface GscQueryResponse {
   rows?: GscApiRow[];
 }
 
-const TOP_LIMIT = 25;
+const TOP_LIMIT = 100;
 
 export async function fetchGscBundle(opts: {
   token: string;

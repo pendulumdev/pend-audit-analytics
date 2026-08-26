@@ -7,6 +7,7 @@ import { fetchGscBundle } from "./gsc.js";
 import { withInsights } from "./insights.js";
 import { observeEventsOnUrls, shouldObserveEvents } from "./observe.js";
 import { fetchPsiPages, selectPsiJobs } from "./psi.js";
+import { observeNamedRivals } from "./rivals.js";
 import { collectGoogleSetup, selectLandingUrls } from "./tags.js";
 
 export interface FetchAnalyticsOptions {
@@ -64,6 +65,7 @@ export async function fetchAnalyticsBundle(
     const observed = await maybeObserve(config, pageUrl ? [pageUrl] : [], errors);
     const crux = await maybeCrux(opts.baseUrl, errors);
     const psi = await maybePsi(pageUrl, errors, opts.outDir);
+    const rivals = await maybeRivals(config.rivals, errors);
     const events = eventsOrUndefined(configured, [], observed);
     return {
       range,
@@ -72,6 +74,7 @@ export async function fetchAnalyticsBundle(
       ...(events !== undefined && { events }),
       ...(crux !== undefined && { crux }),
       ...(psi !== undefined && { psi }),
+      ...(rivals !== undefined && { rivals }),
       errors: [...errors, { source: "auth", message }],
     };
   }
@@ -158,6 +161,7 @@ export async function fetchAnalyticsBundle(
   const observed = await maybeObserve(config, observeUrls, errors);
   const crux = await maybeCrux(opts.baseUrl, errors);
   const psi = await maybePsi(pageUrl, errors, opts.outDir);
+  const rivals = await maybeRivals(config.rivals, errors);
 
   const events = eventsOrUndefined(configured, received, observed);
   return withInsights({
@@ -168,8 +172,23 @@ export async function fetchAnalyticsBundle(
     ...(events !== undefined && { events }),
     ...(crux !== undefined && { crux }),
     ...(psi !== undefined && { psi }),
+    ...(rivals !== undefined && { rivals }),
     ...(errors.length > 0 && { errors }),
   });
+}
+
+async function maybeRivals(
+  hosts: readonly string[] | undefined,
+  errors: AnalyticsError[],
+): Promise<AnalyticsBundle["rivals"] | undefined> {
+  if (!hosts?.length) return undefined;
+  const rivals = await observeNamedRivals({ hosts });
+  for (const row of rivals) {
+    if (row.error) {
+      errors.push({ source: "rival", message: `${row.host}: ${row.error}` });
+    }
+  }
+  return rivals;
 }
 
 async function maybeObserve(
@@ -180,6 +199,7 @@ async function maybeObserve(
   if (!shouldObserveEvents(config) || !urls.length) return undefined;
   try {
     const result = await observeEventsOnUrls(urls);
+    if (result.skipped) return undefined;
     if (result.error) {
       errors.push({ source: "observe", message: result.error });
     }

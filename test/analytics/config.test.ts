@@ -79,6 +79,21 @@ propertyId = "123456789"
     assert.equal(cfg.analytics.observeEvents, true);
   });
 
+  it("parses named rival hosts on the analytics table", () => {
+    const path = writeToml(`
+[analytics]
+enabled = true
+rivals = ["https://rival.test", "https://peer.test"]
+[analytics.searchConsole]
+siteUrl = "sc-domain:example.com"
+`);
+    const cfg = loadConfig(path);
+    assert.deepEqual(cfg.analytics.rivals, [
+      "https://rival.test",
+      "https://peer.test",
+    ]);
+  });
+
   it("rejects enabled analytics without sources", () => {
     const path = writeToml(`
 [analytics]
