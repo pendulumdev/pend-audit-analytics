@@ -66,7 +66,7 @@ their logs can identify or block us.
 As a project dependency, pinned to a release tag:
 
 ```bash
-npm install github:pendulumdev/pend-analytics-audit#v0.1.0
+npm install github:pendulumdev/pend-analytics-audit#v0.1.1
 ```
 
 Installing from git compiles `dist/` on install via the `prepare` script, so
