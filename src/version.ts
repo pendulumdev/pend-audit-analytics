@@ -17,4 +17,4 @@ export const VERSION: string = (() => {
   return "0.0.0";
 })();
 
-export const USER_AGENT = `pend-analytics/${VERSION} (+https://github.com/pendulumdev/pend-analytics-audit)`;
+export const USER_AGENT = `pend-analytics/${VERSION} (+https://github.com/pendulumdev/pend-audit-analytics)`;

@@ -25,7 +25,7 @@ Playwright yourself is required if you want the probe locally.
 Installation is currently from a git tag:
 
 ```bash
-npm install github:pendulumdev/pend-analytics-audit#v0.1.1
+npm install github:pendulumdev/pend-audit-analytics#v0.1.1
 ```
 
 Distribution is git tags and GitHub Releases. Consumers should pin an

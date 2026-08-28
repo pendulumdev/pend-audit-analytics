@@ -5,7 +5,7 @@
 Please do not open a public issue.
 
 Report privately through
-[GitHub Security Advisories](https://github.com/pendulumdev/pend-analytics-audit/security/advisories/new),
+[GitHub Security Advisories](https://github.com/pendulumdev/pend-audit-analytics/security/advisories/new),
 or email **security@pendulumdev.co.uk**.
 
 Include what you did, what happened, and what you expected. A proof of concept

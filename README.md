@@ -32,7 +32,7 @@ consumes `run.json`, which keeps this repo free of presentation decisions.
   `run.analytics.errors[]` and the process still exits 0.
 - **Observe off by default** - Chromium collect intercept is opt-in.
 
-Pair it with [`pend-seo`](https://github.com/pendulumdev/pend-seo-audit) for
+Pair it with [`pend-seo`](https://github.com/pendulumdev/pend-audit-seo) for
 rendered-page technical SEO.
 
 ## Documentation
@@ -66,7 +66,7 @@ their logs can identify or block us.
 As a project dependency, pinned to a release tag:
 
 ```bash
-npm install github:pendulumdev/pend-analytics-audit#v0.1.1
+npm install github:pendulumdev/pend-audit-analytics#v0.1.1
 ```
 
 Installing from git compiles `dist/` on install via the `prepare` script, so
@@ -77,8 +77,8 @@ GitHub Releases; npm under `@pendulumdev` is not scheduled. See
 From a clone:
 
 ```bash
-git clone https://github.com/pendulumdev/pend-analytics-audit.git
-cd pend-analytics-audit
+git clone https://github.com/pendulumdev/pend-audit-analytics.git
+cd pend-audit-analytics
 npm install
 npm run build
 npm link          # exposes `pend-analytics` on your PATH
@@ -111,7 +111,7 @@ Cursor `mcp.json`:
   "mcpServers": {
     "pend-analytics": {
       "command": "npx",
-      "args": ["-y", "github:pendulumdev/pend-analytics-audit", "mcp"]
+      "args": ["-y", "github:pendulumdev/pend-audit-analytics", "mcp"]
     }
   }
 }
@@ -164,7 +164,7 @@ the tagged commit and publishes a GitHub release.
 ## Contributing
 
 Issues and pull requests are welcome at
-[`pendulumdev/pend-analytics-audit`](https://github.com/pendulumdev/pend-analytics-audit).
+[`pendulumdev/pend-audit-analytics`](https://github.com/pendulumdev/pend-audit-analytics).
 Prefer small, single-purpose changes. Start with
 [CONTRIBUTING.md](CONTRIBUTING.md); report vulnerabilities per
 [SECURITY.md](SECURITY.md).

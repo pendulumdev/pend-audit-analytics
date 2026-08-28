@@ -25,7 +25,7 @@ zeros on purpose. It does not predict rankings or invent keywords.
   "mcpServers": {
     "pend-analytics": {
       "command": "npx",
-      "args": ["-y", "github:pendulumdev/pend-analytics-audit", "mcp"]
+      "args": ["-y", "github:pendulumdev/pend-audit-analytics", "mcp"]
     }
   }
 }

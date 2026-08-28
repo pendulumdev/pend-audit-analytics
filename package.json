@@ -12,11 +12,11 @@
   "author": "Pendulum Development Ltd",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pendulumdev/pend-analytics-audit.git"
+    "url": "git+https://github.com/pendulumdev/pend-audit-analytics.git"
   },
-  "homepage": "https://github.com/pendulumdev/pend-analytics-audit#readme",
+  "homepage": "https://github.com/pendulumdev/pend-audit-analytics#readme",
   "bugs": {
-    "url": "https://github.com/pendulumdev/pend-analytics-audit/issues"
+    "url": "https://github.com/pendulumdev/pend-audit-analytics/issues"
   },
   "type": "module",
   "exports": {

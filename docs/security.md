@@ -36,7 +36,7 @@ Do not rely on the engine to do this for you. It does not.
 | `chromeuxreport.googleapis.com` | CrUX field data | Only when a PageSpeed key is configured |
 
 Requests carry a single identifiable user agent,
-`pend-analytics/<version> (+https://github.com/pendulumdev/pend-analytics-audit)`,
+`pend-analytics/<version> (+https://github.com/pendulumdev/pend-audit-analytics)`,
 so a site owner reading their logs can identify or block us.
 
 ## Credentials
