@@ -1,6 +1,10 @@
-import type { CruxOriginBundle, RivalOriginObservation, RivalPageObservation } from "../types.js";
+import type {
+  CruxOriginBundle,
+  RivalOriginObservation,
+  RivalPageObservation,
+} from "../types.js";
 import { fetchCruxOrigin, originFromBaseUrl, pagespeedApiKey } from "./crux.js";
-import { fetchText, type FetchLike } from "./tags.js";
+import { type FetchLike, fetchText } from "./tags.js";
 
 const SAMPLE_LIMIT = 5;
 
@@ -11,7 +15,8 @@ function firstMatch(html: string, re: RegExp): string | undefined {
 }
 
 function stripTags(html: string): string {
-  return html.replace(/<script[\s\S]*?<\/script>/gi, " ")
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
@@ -20,19 +25,18 @@ function stripTags(html: string): string {
 
 export function parseRivalPage(html: string, url: string): RivalPageObservation {
   const title = firstMatch(html, /<title[^>]*>([\s\S]*?)<\/title>/i);
-  const description = firstMatch(
-    html,
-    /<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']/i,
-  ) ?? firstMatch(
-    html,
-    /<meta[^>]+content=["']([^"']*)["'][^>]+name=["']description["']/i,
-  );
+  const description =
+    firstMatch(
+      html,
+      /<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']/i,
+    ) ??
+    firstMatch(html, /<meta[^>]+content=["']([^"']*)["'][^>]+name=["']description["']/i);
   const h1 = firstMatch(html, /<h1\b[^>]*>([\s\S]*?)<\/h1>/i);
   const schemaTypes = [
     ...new Set(
-      [...html.matchAll(/"@type"\s*:\s*"([^"]+)"/g)].map((m) => m[1]).filter(
-        (t): t is string => Boolean(t),
-      ),
+      [...html.matchAll(/"@type"\s*:\s*"([^"]+)"/g)]
+        .map((m) => m[1])
+        .filter((t): t is string => Boolean(t)),
     ),
   ];
   const text = stripTags(html);
@@ -49,10 +53,7 @@ export function parseRivalPage(html: string, url: string): RivalPageObservation 
   };
 }
 
-async function sitemapSample(
-  origin: string,
-  fetchImpl: FetchLike,
-): Promise<string[]> {
+async function sitemapSample(origin: string, fetchImpl: FetchLike): Promise<string[]> {
   try {
     const xml = await fetchText(`${origin}/sitemap.xml`, fetchImpl);
     const locs = [...xml.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/gi)]

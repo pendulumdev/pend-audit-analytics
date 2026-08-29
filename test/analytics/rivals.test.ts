@@ -28,7 +28,10 @@ describe("parseRivalPage", () => {
   });
 
   it("omits fields that were not in the HTML", () => {
-    const page = parseRivalPage("<html><body>plain</body></html>", "https://rival.test/x");
+    const page = parseRivalPage(
+      "<html><body>plain</body></html>",
+      "https://rival.test/x",
+    );
     assert.equal(page.title, undefined);
     assert.equal(page.description, undefined);
     assert.equal(page.h1, undefined);

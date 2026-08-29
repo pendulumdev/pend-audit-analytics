@@ -88,10 +88,7 @@ rivals = ["https://rival.test", "https://peer.test"]
 siteUrl = "sc-domain:example.com"
 `);
     const cfg = loadConfig(path);
-    assert.deepEqual(cfg.analytics.rivals, [
-      "https://rival.test",
-      "https://peer.test",
-    ]);
+    assert.deepEqual(cfg.analytics.rivals, ["https://rival.test", "https://peer.test"]);
   });
 
   it("rejects enabled analytics without sources", () => {
