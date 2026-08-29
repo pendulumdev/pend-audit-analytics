@@ -21,7 +21,7 @@ npm test
 npm run build
 ```
 
-CI runs the same set on Node 20 and 22, plus a full-history secret scan and an
+CI runs the same set on Node 22, plus a full-history secret scan and an
 ASCII punctuation check.
 
 ## The rules that matter here

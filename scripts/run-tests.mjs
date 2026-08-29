@@ -6,10 +6,9 @@
  * remembers to add never runs, and never fails, so it reads as passing coverage
  * that does not exist. Discovery removes the human step.
  *
- * Zero dependencies and hand-rolled recursion on purpose. Node's own runner
- * cannot do this on our supported floor (Node 20): passing a directory finds no
- * `.ts` files, and glob arguments only landed in Node 21. Raising the floor to
- * suit the test script would be the tail wagging the dog for a published CLI.
+ * Zero dependencies and hand-rolled recursion on purpose. Node can glob
+ * `.ts` files now, but a one-file walker keeps discovery in-repo and
+ * independent of runner flags.
  *
  *   node scripts/run-tests.mjs              # everything
  *   node scripts/run-tests.mjs score        # only paths containing "score"

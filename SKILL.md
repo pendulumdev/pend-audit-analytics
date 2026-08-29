@@ -60,5 +60,5 @@ There is no catalog and no checklist.
 | Pull | `pend-analytics audit -c analytics.toml` |
 | Validate via MCP | `config_validate` |
 
-Requires Node 20+. A Google service account with read access. Playwright only
+Requires Node 22.12+. A Google service account with read access. Playwright only
 if you opt into observe.

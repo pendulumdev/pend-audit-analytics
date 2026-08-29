@@ -61,7 +61,7 @@ test/       tests
 
 ## Getting started
 
-Requires **Node.js 20+**. No browser install unless you opt into observeEvents (see docs).
+Requires **Node.js 22.12+**. No browser install unless you opt into observeEvents (see docs).
 
 Requests to websites use a `pend-analytics/VERSION` user agent so a site owner reading
 their logs can identify or block us.
@@ -199,7 +199,7 @@ Prefer small, single-purpose changes. Start with
 [Pendulum-url]: https://pendulumdev.co.uk/
 [Status-shield]: https://img.shields.io/badge/status-stable-000000?style=for-the-badge
 [Status-url]: README.md
-[Node-shield]: https://img.shields.io/badge/node-20+-000000?style=for-the-badge&logo=nodedotjs
+[Node-shield]: https://img.shields.io/badge/node-22.12+-000000?style=for-the-badge&logo=nodedotjs
 [Node-url]: https://nodejs.org/
 [GA4-shield]: https://img.shields.io/badge/GA4-000000?style=for-the-badge&logo=googleanalytics
 [GA4-url]: https://developers.google.com/analytics
