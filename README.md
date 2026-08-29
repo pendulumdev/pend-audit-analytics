@@ -19,7 +19,7 @@ integrate or act upon, it is not a readiness number.
 [![GA4][GA4-shield]][GA4-url]
 [![Search Console][SearchConsole-shield]][SearchConsole-url]
 
-Mantra: "keep it simple, keep it safe".
+Mantra: **"keep it simple, keep it safe"**.
 
 ---
 
