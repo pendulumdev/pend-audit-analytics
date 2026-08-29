@@ -46,6 +46,7 @@ readiness score - keeping this tool free of presentation decisions.
 - [`docs/output.md`](docs/output.md) - the `run.json` contract
 - [`docs/analytics.md`](docs/analytics.md) - Search Console and GA4 setup
 - [`docs/security.md`](docs/security.md) - what this tool connects to and writes
+- [`docs/releasing.md`](docs/releasing.md) - tag a release and the notes format
 - [`examples/`](examples/) - a working config
 
 ### Repository layout
@@ -71,7 +72,7 @@ their logs can identify or block us.
 As a project dependency, pinned to a release tag:
 
 ```bash
-npm install github:pendulumdev/pend-audit-analytics#v0.1.1
+npm install github:pendulumdev/pend-audit-analytics#v0.2.0
 ```
 
 Installing from git compiles `dist/` on install via the `prepare` script, so
@@ -151,16 +152,17 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
   `pend-analytics --version` reads
 - A release is an annotated git tag `vX.Y.Z` on `main`
 - Consumers should pin the tag, not a branch
+- Write `docs/releases/vX.Y.Z.md` first - the workflow publishes that file
+  as the GitHub Release body. Format and steps: [`docs/releasing.md`](docs/releasing.md)
 
 ```bash
-git tag -a v0.1.0 -m "v0.1.0"
+git tag -a v0.2.0 -m "v0.2.0"
 git push origin main --tags
 ```
 
 Pushing the tag runs the release workflow, which refuses to publish if the tag
-and `package.json` disagree - otherwise anyone pinning that tag would get a
-build that misreports its own version. It then re-runs the full gate against
-the tagged commit and publishes a GitHub release.
+and `package.json` disagree, or if the notes file is missing. It then re-runs
+the full gate against the tagged commit and publishes a GitHub release.
 
 ### Limits (intentional)
 

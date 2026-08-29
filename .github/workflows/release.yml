@@ -54,11 +54,18 @@ jobs:
       - name: Check the package contents
         run: npm pack --dry-run
 
+      # Body comes from docs/releases/vX.Y.Z.md so every tag uses the same
+      # headed format. --generate-notes is not a fallback.
       - name: Publish the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          notes="docs/releases/${GITHUB_REF_NAME}.md"
+          if [ ! -f "$notes" ]; then
+            echo "::error::missing $notes - write it from docs/releasing.md"
+            exit 1
+          fi
           gh release create "$GITHUB_REF_NAME" \
             --title "$GITHUB_REF_NAME" \
-            --generate-notes \
+            --notes-file "$notes" \
             --verify-tag
