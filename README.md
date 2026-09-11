@@ -164,6 +164,9 @@ the tagged commit and publishes a GitHub release.
 - API failures soft-fail into the report rather than failing the run
 - Observe (Chromium collect intercept) is off by default
 - Needs a Google service account with read access to Search Console and/or GA4
+- Named rivals each add a homepage PageSpeed lab (mobile and desktop). More
+  than a few can make the pull last many minutes; each lab call can wait up
+  to 45s before it times out
 
 ## Contributing
 

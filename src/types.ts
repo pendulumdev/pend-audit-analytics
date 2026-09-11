@@ -1,4 +1,5 @@
-export type AnalyticsInsightSeverity = "info" | "watch" | "action";
+/** What to do next: monitor the next window, or act now. Not a score band. */
+export type AnalyticsInsightResponse = "watch" | "action";
 
 export interface AnalyticsSearchConsoleConfig {
   siteUrl: string;
@@ -29,7 +30,7 @@ export interface AnalyticsConfig {
    * so client GA4 is not inflated. Off unless set, or ANALYTICS_OBSERVE=1.
    */
   observeEvents?: boolean;
-  /** Named rival https origins. Public HTML + CrUX only. */
+  /** Named rival https origins. Homepage CrUX + PSI. Never your Google property. */
   rivals?: string[];
 }
 
@@ -130,7 +131,7 @@ export interface RemediationCopy {
 
 export interface AnalyticsInsight {
   id: string;
-  severity: AnalyticsInsightSeverity;
+  response: AnalyticsInsightResponse;
   title: string;
   detail: string;
   remediation: RemediationCopy;
@@ -139,6 +140,8 @@ export interface AnalyticsInsight {
 export interface AnalyticsError {
   source: "gsc" | "ga4" | "auth" | "tags" | "observe" | "crux" | "psi" | "rival";
   message: string;
+  /** Origin for psi, crux, and rival rows. Distinguishes the site from named rivals. */
+  host?: string;
 }
 
 export type GoogleTagSnippetKind = "gtm" | "gtag" | "ua" | "other";
@@ -207,9 +210,15 @@ export interface GoogleSetupEventsBundle {
   observed?: Array<{ name: string; count: number }>;
 }
 
+export type CruxReason = "not-found" | "empty" | "error";
+
 /** Origin Chrome UX Report field vitals (p75). */
 export interface CruxOriginBundle {
   origin: string;
+  /** Set when vitals are missing so the report says why. */
+  reason?: CruxReason;
+  /** Google or transport message for not-found and error. */
+  detail?: string;
   collectionStart?: string;
   collectionEnd?: string;
   lcpMs?: number;
@@ -258,20 +267,10 @@ export interface PsiLabBundle {
   pages: PsiPageRow[];
 }
 
-export interface RivalPageObservation {
-  url: string;
-  title?: string;
-  description?: string;
-  h1?: string;
-  schemaTypes?: string[];
-  wordCount?: number;
-  headingCount?: number;
-}
-
 export interface RivalOriginObservation {
   host: string;
-  pages: RivalPageObservation[];
   crux?: CruxOriginBundle;
+  psi?: PsiLabBundle;
   error?: string;
 }
 

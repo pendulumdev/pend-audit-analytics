@@ -39,8 +39,8 @@ comparePrevious = true
 # is not inflated. Also ANALYTICS_OBSERVE=1.
 # observeEvents = false
 
-# Named rival https origins. Public HTML plus CrUX only. Never a Google
-# property of yours.
+# Named rival https origins. Homepage CrUX plus PageSpeed lab. Never a
+# Google property of yours.
 # rivals = ["https://example.com"]
 
 # Domain property (sc-domain:host) or URL-prefix with a trailing slash

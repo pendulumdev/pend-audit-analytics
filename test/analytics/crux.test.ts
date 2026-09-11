@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  fetchCruxOrigin,
   originFromBaseUrl,
   pagespeedApiKey,
   parseCruxRecord,
@@ -67,11 +68,59 @@ describe("parseCruxRecord", () => {
     const parsed = parseCruxRecord({
       record: { key: { origin: "https://thin.example" } },
     });
-    assert.deepEqual(parsed, { origin: "https://thin.example" });
+    assert.deepEqual(parsed, { origin: "https://thin.example", reason: "empty" });
   });
 
   it("returns null for empty payloads", () => {
     assert.equal(parseCruxRecord(null), null);
     assert.equal(parseCruxRecord({ error: { code: 404 } }), null);
+  });
+});
+
+describe("fetchCruxOrigin", () => {
+  it("marks a 404 as not-found and keeps the Google message", async () => {
+    const result = await fetchCruxOrigin({
+      origin: "https://quiet.example",
+      apiKey: "test-key",
+      fetchImpl: async () => ({
+        ok: false,
+        status: 404,
+        async text() {
+          return JSON.stringify({
+            error: { message: "chrome ux report data not found" },
+          });
+        },
+      }),
+    });
+    assert.equal(result.ok, true);
+    assert.deepEqual(result.crux, {
+      origin: "https://quiet.example",
+      reason: "not-found",
+      detail: "chrome ux report data not found",
+    });
+  });
+
+  it("marks a 403 as error and still returns a crux object", async () => {
+    const result = await fetchCruxOrigin({
+      origin: "https://example.com",
+      apiKey: "test-key",
+      fetchImpl: async () => ({
+        ok: false,
+        status: 403,
+        async text() {
+          return JSON.stringify({
+            error: { message: "Chrome UX Report API has not been used" },
+          });
+        },
+      }),
+    });
+    assert.equal(result.ok, false);
+    if (result.ok) throw new Error("expected error");
+    assert.equal(result.error, "Chrome UX Report API has not been used");
+    assert.deepEqual(result.crux, {
+      origin: "https://example.com",
+      reason: "error",
+      detail: "Chrome UX Report API has not been used",
+    });
   });
 });

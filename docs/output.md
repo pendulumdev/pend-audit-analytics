@@ -65,13 +65,49 @@ The payload is `run.analytics`. Provider failures stay in `errors[]` and the pro
 <tr><td><code>pages</code></td><td><code>["https://example.com/", "https://example.com/about"]</code></td><td>Scanned URLs this snippet was found on.</td></tr>
 <tr><td><code>analytics.events</code></td><td></td><td>Declared vs received (and optional observed) event names.</td></tr>
 <tr><td><code>analytics.crux</code></td><td></td><td>Origin Chrome UX Report field vitals, when a PageSpeed key is set.</td></tr>
+<tr><td><code>reason</code></td><td><code>"not-found"</code></td><td>Present when vitals are missing. <code>not-found</code> (no field record), <code>empty</code> (record with no p75s), or <code>error</code>.</td></tr>
+<tr><td><code>detail</code></td><td><code>"chrome ux report data not found"</code></td><td>Google or transport message for <code>not-found</code> and <code>error</code>.</td></tr>
 <tr><td><code>analytics.psi</code></td><td></td><td>Homepage lab rows (mobile and desktop), when a PageSpeed key is set.</td></tr>
-<tr><td><code>analytics.rivals</code></td><td></td><td>Named rival origins: public HTML plus CrUX.</td></tr>
-<tr><td><code>analytics.insights</code></td><td></td><td>Period drops, low-CTR queries, position watch.</td></tr>
+<tr><td><code>analytics.rivals</code></td><td></td><td>Named rival origins: homepage CrUX and PageSpeed lab, when a PageSpeed key is set.</td></tr>
+<tr><td><code>analytics.insights</code></td><td></td><td>Period signals. Omitted rows mean the threshold was not met. See the table below.</td></tr>
+<tr><td><code>id</code></td><td><code>"gsc-clicks-drop-action"</code></td><td>Stable insight id.</td></tr>
+<tr><td><code>response</code></td><td><code>"action"</code></td><td><code>watch</code> (monitor the next window) or <code>action</code> (take steps now). Not a score or how bad the number is.</td></tr>
+<tr><td><code>title</code></td><td><code>"Organic clicks dropped sharply"</code></td><td>Short label.</td></tr>
+<tr><td><code>detail</code></td><td></td><td>Period numbers for this run.</td></tr>
+<tr><td><code>remediation</code></td><td></td><td><code>engineer</code> and <code>client</code> copy.</td></tr>
 <tr><td><code>analytics.errors</code></td><td></td><td>Provider, auth, tags, observe, CrUX, or PSI soft-failures.</td></tr>
+<tr><td><code>source</code></td><td><code>"psi"</code></td><td><code>gsc</code>, <code>ga4</code>, <code>auth</code>, <code>tags</code>, <code>observe</code>, <code>crux</code>, <code>psi</code>, or <code>rival</code>.</td></tr>
+<tr><td><code>message</code></td><td><code>"https://…/ (mobile): Timed out"</code></td><td>Human-readable failure.</td></tr>
+<tr><td><code>host</code></td><td><code>"https://pendulumdev.co.uk"</code></td><td>Origin for <code>psi</code>, <code>crux</code>, and <code>rival</code> rows so the site and named rivals stay distinguishable.</td></tr>
 <tr><td><code>timing</code></td><td></td><td>Wall time for the pull. Browser and crawl times stay zero.</td></tr>
 </tbody>
 </table>
+
+---
+
+## Insights
+
+Period signals, not a check catalog. A row appears only when its threshold is crossed. An empty list means nothing notable this window, not that everything passed.
+
+`response` is what to do next, not how severe the metric is. `watch` means monitor over the next window. `action` means take steps now.
+
+<table>
+<thead>
+<tr><th>id</th><th>response</th><th>title</th></tr>
+</thead>
+<tbody>
+<tr><td><code>gsc-clicks-drop-action</code></td><td><code>action</code></td><td>Organic clicks dropped sharply</td></tr>
+<tr><td><code>gsc-clicks-drop-watch</code></td><td><code>watch</code></td><td>Organic clicks trended down</td></tr>
+<tr><td><code>gsc-impressions-drop-action</code></td><td><code>action</code></td><td>Search impressions dropped sharply</td></tr>
+<tr><td><code>gsc-impressions-drop-watch</code></td><td><code>watch</code></td><td>Search impressions trended down</td></tr>
+<tr><td><code>gsc-low-ctr-queries</code></td><td><code>action</code></td><td>High-impression queries with low CTR</td></tr>
+<tr><td><code>gsc-position-worse</code></td><td><code>watch</code></td><td>Average position worsened</td></tr>
+<tr><td><code>ga4-sessions-drop-action</code></td><td><code>action</code></td><td>Sessions dropped sharply</td></tr>
+<tr><td><code>ga4-sessions-drop-watch</code></td><td><code>watch</code></td><td>Sessions trended down</td></tr>
+</tbody>
+</table>
+
+Period drop rows need `comparePrevious` and a previous window. `action` is a 25%+ fall vs the prior period; `watch` is a 10-25% fall. Low-CTR needs queries in the top 10 with at least 100 impressions and CTR under 2%. Position watch fires when average position is 1.5 or more worse and impressions stayed within 10%.
 
 ---
 

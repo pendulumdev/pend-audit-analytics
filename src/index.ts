@@ -7,7 +7,10 @@
  */
 
 export { resolveAnalyticsRange } from "./analytics/dates.js";
-export { buildAnalyticsInsights } from "./analytics/insights.js";
+export {
+  ANALYTICS_INSIGHT_CATALOG,
+  buildAnalyticsInsights,
+} from "./analytics/insights.js";
 export { runAnalyticsPull } from "./analytics/runner.js";
 export { loadConfig, writeInitConfig } from "./config.js";
 export { DEFAULT_ANALYTICS_OUT, readRunJson, writeReports } from "./report/write.js";

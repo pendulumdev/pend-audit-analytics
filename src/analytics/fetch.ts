@@ -2,6 +2,7 @@ import type { AnalyticsBundle, AnalyticsConfig, AnalyticsError } from "../types.
 import { getGoogleAccessToken } from "./auth.js";
 import { fetchCruxOrigin, originFromBaseUrl, pagespeedApiKey } from "./crux.js";
 import { resolveAnalyticsRange } from "./dates.js";
+import { psiSoftErrors, softError } from "./errors.js";
 import { fetchGa4Bundle, fetchGa4EventCounts } from "./ga4.js";
 import { fetchGscBundle } from "./gsc.js";
 import { withInsights } from "./insights.js";
@@ -189,8 +190,12 @@ async function maybeRivals(
   });
   for (const row of rivals) {
     if (row.error) {
-      errors.push({ source: "rival", message: `${row.host}: ${row.error}` });
+      errors.push(softError("rival", `${row.host}: ${row.error}`, row.host));
     }
+    if (row.crux?.reason === "error" && row.crux.detail) {
+      errors.push(softError("crux", row.crux.detail, row.host));
+    }
+    errors.push(...psiSoftErrors(row.psi?.pages ?? []));
   }
   return rivals;
 }
@@ -232,20 +237,12 @@ async function maybePsi(
       apiKey,
       ...(outDir !== undefined && { outDir }),
     });
-    for (const page of psi.pages) {
-      if (page.error) {
-        errors.push({
-          source: "psi",
-          message: `${page.url} (${page.strategy}): ${page.error}`,
-        });
-      }
-    }
+    errors.push(...psiSoftErrors(psi.pages));
     return psi;
   } catch (err) {
-    errors.push({
-      source: "psi",
-      message: err instanceof Error ? err.message : String(err),
-    });
+    errors.push(
+      softError("psi", err instanceof Error ? err.message : String(err), homeUrl),
+    );
     return undefined;
   }
 }
@@ -261,16 +258,13 @@ async function maybeCrux(
   try {
     const result = await fetchCruxOrigin({ origin, apiKey });
     if (!result.ok) {
-      errors.push({ source: "crux", message: result.error });
-      return undefined;
+      errors.push(softError("crux", result.error, origin));
     }
-    if ("crux" in result) return result.crux;
-    return { origin: result.origin };
+    return result.crux;
   } catch (err) {
-    errors.push({
-      source: "crux",
-      message: err instanceof Error ? err.message : String(err),
-    });
+    errors.push(
+      softError("crux", err instanceof Error ? err.message : String(err), origin),
+    );
     return undefined;
   }
 }

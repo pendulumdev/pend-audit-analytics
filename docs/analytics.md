@@ -144,17 +144,24 @@ environment wins.
 
 With a key and a `baseUrl`, the pull also writes:
 
-- `run.analytics.crux` - origin Chrome UX Report vitals
+- `run.analytics.crux` - origin Chrome UX Report vitals. When vitals are
+  missing, `reason` is `not-found` (no field record), `empty` (record with no
+  p75s), or `error`, plus `detail` from Google or the transport.
 - `run.analytics.psi` - homepage PageSpeed Insights lab rows, mobile and desktop,
   performance category only. Each row keeps the score, five lab metrics (FCP,
   LCP, TBT, CLS, Speed Index), a capped Diagnose list (insights, opportunities,
   failed diagnostics), and the older top-3 `opportunities` field. Titles,
   scores, and estimated savings only - never filmstrip, details tables, or
   base64 in `run.json`.
+- `run.analytics.rivals` - the same CrUX origin query and homepage lab pair for
+  each named rival. No on-page copy (title, headings, word count). Rival lab
+  rows do not write screenshots, so they cannot overwrite `psi-shots/`.
 
 Final Lighthouse screenshots write to `dirname(--out)/psi-shots/` as paths,
-not base64. Without the key both sections are simply omitted. A CrUX 404 means
-the origin has no field record yet, which is not a failed run.
+not base64. Without the key those sections are simply omitted (rival rows stay
+as `{ host }` only). A CrUX 404 writes `reason: "not-found"` and is not a
+failed run. Each rival adds two sequential lab calls (up to 45s each), so a
+long rival list can make the pull much slower.
 
 The key is stripped from any error text before it reaches `run.json`, so a
 failing request cannot leak it into a stored report. Google's lab fetch is
@@ -180,5 +187,6 @@ dependency - install it yourself if you want this probe.
 | `analytics observe: ...` | Chromium observe probe failed, soft. Off by default; set `observeEvents` or `ANALYTICS_OBSERVE=1` |
 | No page experience data | Set `PAGESPEED_API_KEY` or `analytics.pagespeedApiKey`. Missing key omits the section by design |
 | PageSpeed or CrUX `403` | Enable PageSpeed Insights API and Chrome UX Report API, then restrict the key to those two |
-| No CrUX origin data | Origin is too new or too quiet for CrUX. Expected, not a failure |
-| `analytics psi: ...` | PageSpeed Insights failed for that URL, soft. Quota and timeout still succeed the run |
+| `crux.reason` is `not-found` | Origin is too new or too quiet for CrUX. Expected, not a failure |
+| `crux.reason` is `error` | Read `crux.detail`. Enable Chrome UX Report API, or fix the key |
+| `analytics psi: ...` | PageSpeed Insights failed for that URL, soft. Quota and timeout still succeed the run. `errors[].host` is the origin (site or a named rival) |

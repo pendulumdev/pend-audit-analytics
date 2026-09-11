@@ -1,5 +1,6 @@
-import type { CruxOriginBundle } from "../types.js";
+import type { CruxOriginBundle, CruxReason } from "../types.js";
 import { USER_AGENT } from "../version.js";
+import { redactApiKey } from "./psi.js";
 
 const CRUX_URL = "https://chromeuxreport.googleapis.com/v1/records:queryRecord";
 const FETCH_TIMEOUT_MS = 12_000;
@@ -73,8 +74,10 @@ export function parseCruxRecord(body: unknown): CruxOriginBundle | null {
   const cls = p75(metrics, "cumulative_layout_shift");
   const collectionStart = cruxDate(periodObj?.firstDate);
   const collectionEnd = cruxDate(periodObj?.lastDate);
+  const empty = lcpMs == null && inpMs == null && cls == null;
   return {
     origin,
+    ...(empty ? { reason: "empty" as const } : {}),
     ...(collectionStart !== undefined && { collectionStart }),
     ...(collectionEnd !== undefined && { collectionEnd }),
     ...(lcpMs != null ? { lcpMs } : {}),
@@ -83,10 +86,43 @@ export function parseCruxRecord(body: unknown): CruxOriginBundle | null {
   };
 }
 
+function cruxWithoutVitals(
+  origin: string,
+  reason: CruxReason,
+  detail?: string,
+): CruxOriginBundle {
+  return {
+    origin,
+    reason,
+    ...(detail ? { detail } : {}),
+  };
+}
+
+function apiErrorMessage(body: unknown, fallback: string): string {
+  if (body && typeof body === "object" && "error" in body) {
+    const message = (body as { error?: { message?: unknown } }).error?.message;
+    if (typeof message === "string" && message.trim()) return message.trim();
+  }
+  return fallback;
+}
+
 export type FetchCruxResult =
   | { ok: true; crux: CruxOriginBundle }
-  | { ok: true; notFound: true; origin: string }
-  | { ok: false; error: string };
+  | { ok: false; crux: CruxOriginBundle; error: string };
+
+export type CruxFetchLike = (
+  input: string,
+  init?: {
+    method?: string;
+    headers?: Record<string, string>;
+    body?: string;
+    signal?: AbortSignal;
+  },
+) => Promise<{
+  ok: boolean;
+  status: number;
+  text(): Promise<string>;
+}>;
 
 /**
  * Origin CrUX for a site URL. Caller skips when `pagespeedApiKey()` is empty.
@@ -94,12 +130,14 @@ export type FetchCruxResult =
 export async function fetchCruxOrigin(opts: {
   origin: string;
   apiKey: string;
+  fetchImpl?: CruxFetchLike;
 }): Promise<FetchCruxResult> {
+  const fetchImpl = opts.fetchImpl ?? (globalThis.fetch as CruxFetchLike);
   const url = `${CRUX_URL}?key=${encodeURIComponent(opts.apiKey)}`;
   const ac = new AbortController();
   const timer = setTimeout(() => ac.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(url, {
+    const res = await fetchImpl(url, {
       method: "POST",
       signal: ac.signal,
       headers: {
@@ -116,25 +154,51 @@ export async function fetchCruxOrigin(opts: {
       body = null;
     }
     if (res.status === 404) {
-      return { ok: true, notFound: true, origin: opts.origin };
+      return {
+        ok: true,
+        crux: cruxWithoutVitals(
+          opts.origin,
+          "not-found",
+          apiErrorMessage(body, "No Chrome UX Report field record for this origin"),
+        ),
+      };
     }
     if (!res.ok) {
-      const message =
-        body && typeof body === "object" && "error" in body
-          ? String(
-              (body as { error?: { message?: string } }).error?.message ?? res.status,
-            )
-          : `HTTP ${res.status}`;
-      return { ok: false, error: message };
+      const message = redactApiKey(
+        apiErrorMessage(body, `HTTP ${res.status}`),
+        opts.apiKey,
+      );
+      return {
+        ok: false,
+        crux: cruxWithoutVitals(opts.origin, "error", message),
+        error: message,
+      };
     }
     const parsed = parseCruxRecord(body);
     if (!parsed) {
-      return { ok: true, notFound: true, origin: opts.origin };
+      return {
+        ok: true,
+        crux: cruxWithoutVitals(
+          opts.origin,
+          "empty",
+          "Chrome UX Report returned no origin record",
+        ),
+      };
     }
     return { ok: true, crux: parsed };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return { ok: false, error: message };
+    const raw =
+      err instanceof Error && err.name === "AbortError"
+        ? "Timed out"
+        : err instanceof Error
+          ? err.message
+          : String(err);
+    const message = redactApiKey(raw, opts.apiKey);
+    return {
+      ok: false,
+      crux: cruxWithoutVitals(opts.origin, "error", message),
+      error: message,
+    };
   } finally {
     clearTimeout(timer);
   }

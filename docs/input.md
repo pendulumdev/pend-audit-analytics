@@ -86,7 +86,7 @@ Credentials, scopes, per-property access and troubleshooting are their own subje
 <tr><td><code>startDate</code> / <code>endDate</code></td><td><code>"2026-01-01"</code></td><td><code>YYYY-MM-DD</code> overrides.</td><td>Must be set together. When both set, <code>rangeDays</code> is ignored.</td></tr>
 <tr><td><code>comparePrevious</code></td><td><code>true</code></td><td>Compare against the immediately preceding window of equal length.</td><td>Default <code>true</code>.</td></tr>
 <tr><td><code>observeEvents</code></td><td><code>false</code></td><td>Optional Chromium collect intercept.</td><td>Default <code>false</code>. Also <code>ANALYTICS_OBSERVE=1</code> (<code>SEO_ANALYTICS_OBSERVE</code> still accepted).</td></tr>
-<tr><td><code>rivals</code></td><td><code>["https://rival.example"]</code></td><td>Named rival https origins.</td><td>Optional. Public HTML plus CrUX only. Never a Google property of yours.</td></tr>
+<tr><td><code>rivals</code></td><td><code>["https://rival.example"]</code></td><td>Named rival https origins.</td><td>Optional. Homepage CrUX and PageSpeed lab, same key as the site. Never a Google property of yours.</td></tr>
 <tr><td><code>searchConsole.siteUrl</code></td><td><code>"sc-domain:example.com"</code></td><td>Search Console property.</td><td>Domain property or a URL-prefix with a trailing <code>/</code>.</td></tr>
 <tr><td><code>ga4.propertyId</code></td><td><code>"123456789"</code></td><td>Numeric GA4 property id.</td><td>A <code>properties/</code> prefix is stripped.</td></tr>
 </tbody>

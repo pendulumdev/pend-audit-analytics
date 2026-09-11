@@ -31,6 +31,7 @@ Do not rely on the engine to do this for you. It does not.
 <tbody>
 <tr><td><code>baseUrl</code></td><td><code>"https://example.com/"</code></td><td>Public HTML tag scan. One GET of the homepage, plus sampled landing URLs.</td></tr>
 <tr><td>Public <code>gtm.js</code></td><td></td><td>GTM container parse. Only when a GTM id is found on the page.</td></tr>
+<tr><td><code>rivals</code></td><td><code>["https://rival.example"]</code></td><td>Origins sent to CrUX and PageSpeed only. The engine does not fetch rival HTML.</td></tr>
 <tr><td><code>www.googleapis.com</code></td><td></td><td>Search Console metrics and PageSpeed. Read-only scopes, only when sources are configured.</td></tr>
 <tr><td><code>analyticsdata.googleapis.com</code></td><td></td><td>GA4 metrics. Read-only scope, only when a property is configured.</td></tr>
 <tr><td><code>chromeuxreport.googleapis.com</code></td><td></td><td>CrUX field data. Only when a PageSpeed key is configured.</td></tr>
