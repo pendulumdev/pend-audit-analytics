@@ -1,6 +1,6 @@
 import { runAnalyticsPull } from "../analytics/runner.js";
 import { loadConfig } from "../config.js";
-import { readRunJson, writeReports } from "../report/write.js";
+import { DEFAULT_ANALYTICS_OUT, readRunJson, writeReports } from "../report/write.js";
 import { DOC_PAGES, isDocPage, readDocPage } from "./docs.js";
 import { summarizeRun } from "./project.js";
 
@@ -38,7 +38,6 @@ function configValidate(args: ToolArgs) {
     project: config.project,
     standard: config.standard,
     ...(config.baseUrl ? { baseUrl: config.baseUrl } : {}),
-    outDir: config.outDir,
     sources: {
       gsc: Boolean(config.analytics.searchConsole),
       ga4: Boolean(config.analytics.ga4),
@@ -49,9 +48,9 @@ function configValidate(args: ToolArgs) {
 
 async function analyticsAuditRun(args: ToolArgs) {
   const config = loadConfig(required(args.config, "config"));
-  if (typeof args.out === "string" && args.out) config.outDir = args.out;
-  const run = await runAnalyticsPull(config);
-  const written = writeReports(run, config.outDir);
+  const out = typeof args.out === "string" && args.out ? args.out : DEFAULT_ANALYTICS_OUT;
+  const run = await runAnalyticsPull(config, { outPath: out });
+  const written = writeReports(run, out);
   return { runPath: written.runJson, ...summarizeRun(run) };
 }
 

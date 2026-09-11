@@ -18,12 +18,12 @@
 
 ## Config and examples
 
-- [ ] New or changed config keys are documented in `docs/configuration.md`
+- [ ] New or changed config keys are documented in `docs/input.md`
 - [ ] `examples/analytics.toml` demonstrates them, and `test/examples.test.ts` passes
 
 ## Breaking changes
 
-<!-- The run.json shape, analytics.toml key names, and the package root
+<!-- The --out JSON shape, audit-config-analytics.toml key names, and the package root
      exports are all public API. See ROADMAP.md. -->
 
 - [ ] No public API change, or the break is described above and the version bump

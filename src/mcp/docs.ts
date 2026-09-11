@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { packageRoot } from "../paths.js";
 
-export const DOC_PAGES = ["configuration", "output", "analytics", "security"] as const;
+export const DOC_PAGES = ["input", "output", "analytics", "security"] as const;
 
 export type DocPage = (typeof DOC_PAGES)[number];
 

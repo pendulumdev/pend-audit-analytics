@@ -1,0 +1,64 @@
+#!/bin/sh
+# pend-audit-analytics commit-message policy - see CONTRIBUTING.md
+# Install with: npm run hooks   (sets core.hooksPath to .githooks)
+#
+# A commit message is ONLY tag lines - any number of them, one tag per line:
+#   [TAG] Short imperative summary
+#   [TAG] Another summary
+# No free-form body. Every line must be a tagged line.
+
+msg_file="$1"
+
+tags='ADD|UPD|FIX|DEL|REF|DOC|TST|CFG|DEP|SEC|PRF|REV'
+tagtok="\[($tags)\]"
+
+first=$(grep -vE '^[[:space:]]*#' "$msg_file" | sed '/^[[:space:]]*$/d' | head -n1)
+
+case "$first" in
+  "Merge "*|"Revert "*|"fixup! "*|"squash! "*) exit 0 ;;
+esac
+
+err=0
+lineno=0
+seen=0
+
+while IFS= read -r line || [ -n "$line" ]; do
+  lineno=$((lineno + 1))
+
+  case "$line" in '#'*) continue ;; esac
+  [ -z "$line" ] && continue
+
+  seen=$((seen + 1))
+
+  if ! printf '%s' "$line" | grep -Eq "^$tagtok .+"; then
+    echo "✗ Line $lineno must be a tag line: $line" >&2
+    err=1
+    continue
+  fi
+
+  count=$(printf '%s' "$line" | grep -Eo "$tagtok" | wc -l | tr -d ' ')
+  if [ "$count" -ne 1 ]; then
+    echo "✗ Line $lineno has multiple tags; one tag per line: $line" >&2
+    err=1
+  fi
+
+  len=$(printf '%s' "$line" | wc -m | tr -d ' ')
+  if [ "$len" -gt 72 ]; then
+    echo "✗ Line $lineno is $len chars; keep tag lines <= 72." >&2
+    err=1
+  fi
+done < "$msg_file"
+
+if [ "$seen" -eq 0 ]; then
+  echo "✗ Commit must contain at least one tag line, e.g. [ADD] Add X." >&2
+  err=1
+fi
+
+if [ "$err" -ne 0 ]; then
+  echo "  Allowed tags: [ADD] [UPD] [FIX] [DEL] [REF] [DOC] [TST] [CFG] [DEP] [SEC] [PRF] [REV]" >&2
+  echo "  Every line is a tag line (one tag per line, <= 72 chars); no free-form body." >&2
+  echo "  See CONTRIBUTING.md" >&2
+  exit 1
+fi
+
+exit 0

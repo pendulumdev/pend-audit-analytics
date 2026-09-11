@@ -21,13 +21,15 @@ describe("originFromBaseUrl", () => {
 });
 
 describe("pagespeedApiKey", () => {
-  it("reads PAGESPEED_API_KEY", () => {
+  it("reads PAGESPEED_API_KEY, then config, and prefers the environment", () => {
     const prev = process.env.PAGESPEED_API_KEY;
     try {
       delete process.env.PAGESPEED_API_KEY;
       assert.equal(pagespeedApiKey(), undefined);
+      assert.equal(pagespeedApiKey("  from-toml  "), "from-toml");
       process.env.PAGESPEED_API_KEY = "  abc123  ";
       assert.equal(pagespeedApiKey(), "abc123");
+      assert.equal(pagespeedApiKey("from-toml"), "abc123");
     } finally {
       if (prev === undefined) delete process.env.PAGESPEED_API_KEY;
       else process.env.PAGESPEED_API_KEY = prev;

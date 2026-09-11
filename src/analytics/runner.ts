@@ -1,4 +1,4 @@
-import { ANALYTICS_DISCLAIMER } from "../disclaimer.js";
+import { dirname, resolve } from "node:path";
 import { unscoredSummary } from "../score.js";
 import type { AnalyticsConfig, AnalyticsEngineConfig, AuditRun } from "../types.js";
 import { fetchAnalyticsBundle } from "./fetch.js";
@@ -8,6 +8,8 @@ export type FetchAnalyticsBundleFn = typeof fetchAnalyticsBundle;
 export interface RunAnalyticsPullOptions {
   /** Override for tests. */
   fetchBundle?: FetchAnalyticsBundleFn;
+  /** JSON --out path; PSI shots land in dirname(--out)/psi-shots/. */
+  outPath?: string;
 }
 
 /**
@@ -21,13 +23,14 @@ export async function runAnalyticsPull(
   const totalStarted = Date.now();
   const analyticsConfig = resolveAnalyticsConfig(config);
   const fetchBundle = opts.fetchBundle ?? fetchAnalyticsBundle;
+  const shotDir = opts.outPath ? dirname(resolve(opts.outPath)) : undefined;
 
   console.error("fetching Search Console / GA4 analytics...");
   const postStarted = Date.now();
   const analytics = await fetchBundle({
     config: analyticsConfig,
     ...(config.baseUrl !== undefined && { baseUrl: config.baseUrl }),
-    outDir: config.outDir,
+    ...(shotDir !== undefined && { outDir: shotDir }),
   });
   const postProcessMs = Date.now() - postStarted;
 
@@ -55,9 +58,6 @@ export async function runAnalyticsPull(
     project: config.project,
     standard: config.standard,
     ...(config.baseUrl !== undefined && { baseUrl: config.baseUrl }),
-    catalogVersion: 0,
-    checkLinks: false,
-    disclaimer: ANALYTICS_DISCLAIMER,
     score: unscoredSummary(),
     pages: [],
     findings: [],

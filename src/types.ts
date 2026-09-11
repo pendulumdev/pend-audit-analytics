@@ -13,6 +13,8 @@ export interface AnalyticsConfig {
   enabled: boolean;
   /** Path to service-account JSON; empty/omit → GOOGLE_APPLICATION_CREDENTIALS. */
   credentialsPath?: string;
+  /** PageSpeed / CrUX key; empty/omit → PAGESPEED_API_KEY. */
+  pagespeedApiKey?: string;
   /** Inclusive day count for the primary window (default 28). */
   rangeDays: number;
   /** YYYY-MM-DD overrides; when both set, rangeDays is ignored. */
@@ -31,11 +33,13 @@ export interface AnalyticsConfig {
   rivals?: string[];
 }
 
+export const ANALYTICS_STANDARD = "Pendulum_Analytics_v1" as const;
+export type AnalyticsStandard = typeof ANALYTICS_STANDARD;
+
 export interface AnalyticsEngineConfig {
   project: string;
-  standard: "Pendulum_Analytics_v1";
+  standard: AnalyticsStandard;
   baseUrl?: string;
-  outDir: string;
   analytics: AnalyticsConfig;
 }
 
@@ -154,22 +158,19 @@ export type GoogleTagCollisionCode =
   | "bound-property-missing"
   | "url-drift";
 
-export interface GoogleSetupSnippet {
-  kind: GoogleTagSnippetKind;
-  location: GoogleTagLocation;
-  text: string;
-  fingerprint: string;
-}
-
 export interface GoogleSetupDestination {
   family: GoogleDestinationFamily;
   id: string;
 }
 
-export interface GoogleSetupPage {
-  url: string;
-  snippets: GoogleSetupSnippet[];
+export interface GoogleSetupSnippet {
+  kind: GoogleTagSnippetKind;
+  location: GoogleTagLocation;
+  text: string;
+  fingerprint: string;
   destinations: GoogleSetupDestination[];
+  /** Pages this snippet was found on. */
+  pages: string[];
 }
 
 export interface GoogleSetupGtmContainer {
@@ -187,7 +188,10 @@ export interface GoogleSetupCollision {
 }
 
 export interface GoogleSetupBundle {
-  pages: GoogleSetupPage[];
+  /** URLs fetched for the public tag scan, homepage first. */
+  urls: string[];
+  /** Unique snippets. Destinations live on the snippet they were read from. */
+  snippets: GoogleSetupSnippet[];
   gtm?: GoogleSetupGtmContainer[];
   collisions: GoogleSetupCollision[];
 }
@@ -322,7 +326,7 @@ export interface AuditTiming {
 }
 
 /**
- * Analytics run.json envelope. `pages` and `findings` stay empty; the payload
+ * Analytics --out envelope. `pages` and `findings` stay empty; the payload
  * is `analytics`. Score is zeros on purpose - this engine does not rate traffic.
  */
 export interface AuditRun {
@@ -332,9 +336,6 @@ export interface AuditRun {
   project: string;
   standard: string;
   baseUrl?: string;
-  catalogVersion: number;
-  checkLinks: boolean;
-  disclaimer: string;
   score: ScoreSummary;
   pages: [];
   findings: [];

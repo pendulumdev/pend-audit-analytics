@@ -5,7 +5,6 @@ import type {
   GoogleSetupDestination,
   GoogleSetupEventsBundle,
   GoogleSetupGtmContainer,
-  GoogleSetupPage,
   GoogleSetupSnippet,
   GoogleTagLocation,
   GoogleTagSnippetKind,
@@ -120,20 +119,30 @@ function isGoogleLoader(kind: GoogleTagSnippetKind, src: string, body: string): 
   );
 }
 
-/** Parse one HTML document into snippets + destinations (no network). */
-export function parseGoogleHtml(html: string, pageUrl: string): GoogleSetupPage {
-  const snippets: GoogleSetupSnippet[] = [];
-  const destinations: GoogleSetupDestination[] = [];
-  const destSeen = new Set<string>();
+/** One fetched page before snippets are folded across URLs. */
+export type ParsedGooglePage = {
+  url: string;
+  snippets: Array<Omit<GoogleSetupSnippet, "pages">>;
+};
 
-  const addDest = (list: GoogleSetupDestination[]) => {
-    for (const d of list) {
-      const key = `${d.family}:${d.id}`;
-      if (destSeen.has(key)) continue;
-      destSeen.add(key);
-      destinations.push(d);
-    }
+function makeSnippet(
+  kind: GoogleTagSnippetKind,
+  location: GoogleTagLocation,
+  raw: string,
+): Omit<GoogleSetupSnippet, "pages"> {
+  const text = truncateSnippet(raw);
+  return {
+    kind,
+    location,
+    text,
+    fingerprint: fingerprintSnippet(text),
+    destinations: collectIds(raw),
   };
+}
+
+/** Parse one HTML document into snippets with their destinations (no network). */
+export function parseGoogleHtml(html: string, pageUrl: string): ParsedGooglePage {
+  const snippets: Array<Omit<GoogleSetupSnippet, "pages">> = [];
 
   SCRIPT_RE.lastIndex = 0;
   for (const match of html.matchAll(SCRIPT_RE)) {
@@ -143,14 +152,7 @@ export function parseGoogleHtml(html: string, pageUrl: string): GoogleSetupPage 
     const kind = kindFromScript(src, body);
     if (!isGoogleLoader(kind, src, body)) continue;
     const raw = src ? `${src}\n${body}`.trim() : body.trim();
-    const text = truncateSnippet(raw);
-    snippets.push({
-      kind,
-      location: locationForIndex(html, match.index ?? 0),
-      text,
-      fingerprint: fingerprintSnippet(text),
-    });
-    addDest(collectIds(`${src}\n${body}`));
+    snippets.push(makeSnippet(kind, locationForIndex(html, match.index ?? 0), raw));
   }
 
   LINK_RE.lastIndex = 0;
@@ -160,29 +162,28 @@ export function parseGoogleHtml(html: string, pageUrl: string): GoogleSetupPage 
     if (!href) continue;
     const kind = kindFromScript(href, "");
     if (!isGoogleLoader(kind, href, "")) continue;
-    const text = truncateSnippet(href);
-    snippets.push({
-      kind: kind === "other" ? "gtag" : kind,
-      location: locationForIndex(html, match.index ?? 0),
-      text,
-      fingerprint: fingerprintSnippet(text),
-    });
-    addDest(collectIds(href));
+    snippets.push(
+      makeSnippet(
+        kind === "other" ? "gtag" : kind,
+        locationForIndex(html, match.index ?? 0),
+        href,
+      ),
+    );
   }
 
   NOSCRIPT_GTM_RE.lastIndex = 0;
   for (const match of html.matchAll(NOSCRIPT_GTM_RE)) {
     const id = match[1];
-    if (id) addDest([{ family: "gtm", id }]);
+    if (!id) continue;
+    const raw = match[0] ?? `https://www.googletagmanager.com/ns.html?id=${id}`;
+    snippets.push(makeSnippet("gtm", locationForIndex(html, match.index ?? 0), raw));
   }
 
-  addDest(collectIds(html));
-
-  return { url: pageUrl, snippets, destinations };
+  return { url: pageUrl, snippets };
 }
 
 export function collisionsForPage(
-  page: GoogleSetupPage,
+  page: ParsedGooglePage,
   opts: { ga4Bound: boolean },
 ): GoogleSetupCollision[] {
   const collisions: GoogleSetupCollision[] = [];
@@ -237,11 +238,16 @@ export function collisionsForPage(
 }
 
 function uniqueIds(
-  page: GoogleSetupPage,
+  page: ParsedGooglePage,
   family: GoogleSetupDestination["family"],
 ): string[] {
   return [
-    ...new Set(page.destinations.filter((d) => d.family === family).map((d) => d.id)),
+    ...new Set(
+      page.snippets
+        .flatMap((s) => s.destinations)
+        .filter((d) => d.family === family)
+        .map((d) => d.id),
+    ),
   ];
 }
 
@@ -577,12 +583,13 @@ export function selectLandingUrls(opts: {
   return out;
 }
 
-function pageTagSignature(page: GoogleSetupPage): string {
+function pageTagSignature(page: ParsedGooglePage): string {
   const fps = page.snippets
     .map((s) => s.fingerprint)
     .sort()
     .join(",");
-  const dest = page.destinations
+  const dest = page.snippets
+    .flatMap((s) => s.destinations)
     .map((d) => `${d.family}:${d.id}`)
     .sort()
     .join(",");
@@ -599,7 +606,7 @@ function pathLabel(url: string): string {
 }
 
 export function urlDriftCollision(
-  pages: GoogleSetupPage[],
+  pages: ParsedGooglePage[],
 ): GoogleSetupCollision | undefined {
   if (pages.length < 2) return undefined;
   const home = pages[0];
@@ -616,16 +623,8 @@ export function urlDriftCollision(
   };
 }
 
-function destinationFamilyFromId(destId: string): GoogleSetupDestination["family"] {
-  if (destId.startsWith("AW-")) return "ads";
-  if (destId.startsWith("UA-")) return "ua";
-  if (destId.startsWith("DC-")) return "floodlight";
-  if (destId.startsWith("GTM-")) return "gtm";
-  return "ga4";
-}
-
 async function enrichPageFromGtm(
-  page: GoogleSetupPage,
+  page: ParsedGooglePage,
   fetchImpl: FetchLike,
   cache: Map<string, GoogleSetupGtmContainer>,
 ): Promise<{
@@ -653,14 +652,31 @@ async function enrichPageFromGtm(
       cache.set(id, parsed);
       added.push(parsed);
     }
-    for (const destId of parsed.destinations ?? []) {
-      const family = destinationFamilyFromId(destId);
-      const key = `${family}:${destId}`;
-      if (page.destinations.some((d) => `${d.family}:${d.id}` === key)) continue;
-      page.destinations.push({ family, id: destId });
-    }
   }
   return { added, configured };
+}
+
+function foldPageSnippets(into: GoogleSetupSnippet[], page: ParsedGooglePage): void {
+  for (const snippet of page.snippets) {
+    const existing = into.find((row) => row.fingerprint === snippet.fingerprint);
+    if (!existing) {
+      into.push({ ...snippet, pages: [page.url] });
+      continue;
+    }
+    if (!existing.pages.includes(page.url)) existing.pages.push(page.url);
+  }
+}
+
+function pagesForDrift(
+  urls: string[],
+  snippets: GoogleSetupSnippet[],
+): ParsedGooglePage[] {
+  return urls.map((url) => ({
+    url,
+    snippets: snippets
+      .filter((s) => s.pages.includes(url))
+      .map(({ pages: _pages, ...rest }) => rest),
+  }));
 }
 
 function dedupeConfigured(
@@ -698,19 +714,27 @@ export async function collectGoogleSetup(opts: {
   const gtmCache = new Map<string, GoogleSetupGtmContainer>();
   for (const c of opts.existing?.gtm ?? []) gtmCache.set(c.containerId, c);
 
-  const pages: GoogleSetupPage[] = [...(opts.existing?.pages ?? [])];
+  const urls: string[] = [...(opts.existing?.urls ?? [])];
+  const snippets: GoogleSetupSnippet[] = (opts.existing?.snippets ?? []).map((s) => ({
+    ...s,
+    destinations: [...s.destinations],
+    pages: [...s.pages],
+  }));
   const gtm: GoogleSetupGtmContainer[] = [...(opts.existing?.gtm ?? [])];
   const collisions: GoogleSetupCollision[] = [...(opts.existing?.collisions ?? [])];
   const configured: GoogleSetupEventsBundle["configured"] = [];
   const errors: string[] = [];
+  const parsed: ParsedGooglePage[] = [];
 
-  const urls: string[] = [];
-  if (!opts.existing) urls.push(opts.pageUrl);
+  const toFetch: string[] = [];
+  if (!opts.existing) toFetch.push(opts.pageUrl);
   for (const extra of opts.extraUrls ?? []) {
-    if (!urls.includes(extra) && extra !== opts.pageUrl) urls.push(extra);
+    if (!toFetch.includes(extra) && extra !== opts.pageUrl && !urls.includes(extra)) {
+      toFetch.push(extra);
+    }
   }
 
-  for (const [i, url] of urls.entries()) {
+  for (const [i, url] of toFetch.entries()) {
     const isHome = !opts.existing && i === 0 && url === opts.pageUrl;
     let html: string | undefined =
       (isHome ? opts.html : undefined) ?? opts.htmlByUrl?.[url];
@@ -726,7 +750,9 @@ export async function collectGoogleSetup(opts: {
     const gtmResult = await enrichPageFromGtm(page, fetchImpl, gtmCache);
     gtm.push(...gtmResult.added);
     configured.push(...gtmResult.configured);
-    pages.push(page);
+    parsed.push(page);
+    if (!urls.includes(url)) urls.push(url);
+    foldPageSnippets(snippets, page);
     collisions.push(
       ...collisionsForPage(page, {
         ga4Bound: isHome && opts.ga4Bound,
@@ -735,17 +761,18 @@ export async function collectGoogleSetup(opts: {
   }
 
   const withoutDrift = collisions.filter((c) => c.code !== "url-drift");
-  const drift = urlDriftCollision(pages);
+  const drift = urlDriftCollision(pagesForDrift(urls, snippets));
   const setup: GoogleSetupBundle = {
-    pages,
+    urls,
+    snippets,
     ...(gtm.length ? { gtm } : {}),
     collisions: drift ? [...withoutDrift, drift] : withoutDrift,
   };
 
-  if (!pages.length && errors.length) {
+  if (!urls.length && errors.length) {
     const [error] = errors;
     return {
-      setup: { pages: [], collisions: [] },
+      setup: { urls: [], snippets: [], collisions: [] },
       configured: [],
       ...(error !== undefined && { error }),
     };

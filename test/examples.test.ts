@@ -27,7 +27,6 @@ describe("examples/analytics.toml", () => {
 
   it("parses through the real config loader", () => {
     assert.equal(config.standard, "Pendulum_Analytics_v1");
-    assert.equal(config.outDir, "analytics-out");
     assert.match(config.baseUrl ?? "", /^https?:\/\//);
   });
 
@@ -36,8 +35,35 @@ describe("examples/analytics.toml", () => {
     assert.equal(config.analytics.searchConsole?.siteUrl, "sc-domain:example.com");
     assert.equal(config.analytics.ga4?.propertyId, "123456789");
     assert.equal(config.analytics.credentialsPath, undefined);
+    assert.equal(config.analytics.pagespeedApiKey, undefined);
     assert.equal(config.analytics.rangeDays, 28);
     assert.equal(config.analytics.comparePrevious, true);
+    assert.equal(config.analytics.observeEvents, false);
+    assert.equal(config.analytics.startDate, undefined);
+    assert.equal(config.analytics.endDate, undefined);
+    assert.equal(config.analytics.rivals, undefined);
+  });
+
+  it("documents every config key, including those left at the off default", () => {
+    const text = readFileSync(join(EXAMPLES, "analytics.toml"), "utf8");
+    for (const key of [
+      "project",
+      "standard",
+      "baseUrl",
+      "enabled",
+      "credentialsPath",
+      "pagespeedApiKey",
+      "rangeDays",
+      "startDate",
+      "endDate",
+      "comparePrevious",
+      "observeEvents",
+      "rivals",
+      "siteUrl",
+      "propertyId",
+    ]) {
+      assert.match(text, new RegExp(`\\b${key}\\b`));
+    }
   });
 });
 

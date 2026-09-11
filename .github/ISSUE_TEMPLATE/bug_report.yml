@@ -12,7 +12,7 @@ body:
     id: what
     attributes:
       label: What happened
-      description: Include the relevant slice of `run.json` if you have one.
+      description: Include the relevant slice of the analytics JSON if you have one.
     validations:
       required: true
 
@@ -46,7 +46,7 @@ body:
     attributes:
       label: Command and config
       description: |
-        The exact command, and your analytics.toml with anything private
+        The exact command, and your audit-config-analytics.toml with anything private
         removed. Remove any service account path, Search Console property
         or GA4 property ID you would rather not publish.
       render: shell

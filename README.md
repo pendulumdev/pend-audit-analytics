@@ -1,71 +1,68 @@
 # Analytics Audit
 
-A **Search Console and GA4 analytics CLI**. Point it at a Google property; it
-pulls time-series, public tags, and (when configured) Chrome field data plus
-a homepage lab check, and writes one machine-readable `run.json`.
-
-This tool creates a `run.json` output containing traffic evidence for you to 
-integrate or act upon, it is not a readiness number.
-
 [![Status][Status-shield]][Status-url]
 [![Docs][Docs-shield]][Docs-url]
 [![License][License-shield]][License-url]
-
-> `autit-analytics` is a small Node tool to generate analytics reports. Install
-> create an analytics.toml with your properties, then run
 
 [![Pendulum][Pendulum-shield]][Pendulum-url]
 [![Node][Node-shield]][Node-url]
 [![GA4][GA4-shield]][GA4-url]
 [![Search Console][SearchConsole-shield]][SearchConsole-url]
 
-Mantra: **"keep it simple, keep it safe"**.
+A Search Console and GA4 analytics CLI. Point it at a Google property; it
+pulls time-series, public tags, and (when configured) Chrome field data plus
+a homepage lab check, and writes one machine-readable JSON file
+(`out/analytics.json` by default).
 
----
-
-## What pend-audit-analytics is
+## What pend-analytics is
 
 **Google setup and traffic evidence, honestly labelled.** Search Console, GA4,
 public tags, and optional CrUX / PageSpeed land in `run.analytics`. Insights
 flag period drops and low-CTR queries. Nothing is turned into a ranking or
-readiness score - keeping this tool free of presentation decisions.
+readiness score.
 
-- **Project-local config** - one `analytics.toml` holds the property ids,
-  date window, and output path.
+It is a JSON engine, not a report UI. Human-facing reports live in whatever
+consumes `out/analytics.json`, which keeps this repo free of presentation
+decisions.
+
+- **Project-local config** - one `audit-config-analytics.toml` holds the
+  property ids, date window, and observe switch.
 - **Read-only Google APIs** - a service account with Restricted / Viewer
   access. A leaked key cannot change Search Console or GA4.
 - **Soft-fail providers** - auth and API errors land in
   `run.analytics.errors[]` and the process still exits 0.
 - **Observe off by default** - Chromium collect intercept is opt-in.
 
----
+Pair it with [`pend-seo`](https://github.com/pendulumdev/pend-audit-seo) for
+technical SEO, and [`pend-a11y`](https://github.com/pendulumdev/pend-audit-a11y)
+for accessible names, alt text and WCAG.
 
 ## Documentation
 
-- [`docs/configuration.md`](docs/configuration.md) - every `analytics.toml` key
-- [`docs/output.md`](docs/output.md) - the `run.json` contract
+- [`docs/input.md`](docs/input.md) - every CLI flag and project-config key
+- [`docs/output.md`](docs/output.md) - the `--out` JSON contract, and how the
+  zeros are read
 - [`docs/analytics.md`](docs/analytics.md) - Search Console and GA4 setup
 - [`docs/security.md`](docs/security.md) - what this tool connects to and writes
 - [`docs/releasing.md`](docs/releasing.md) - tag a release and the notes format
-- [`examples/`](examples/) - a working config
+- [`examples/analytics.toml`](examples/analytics.toml) - annotated project config
 
-### Repository layout
+## Repository layout
 
 ```
-docs/       configuration, output, analytics and security reference
+docs/       input, output, analytics, security, and release notes
 examples/   annotated analytics.toml
 src/        CLI, config, Google pull, insights, JSON writer, MCP
 test/       tests
 ```
 
----
-
 ## Getting started
 
-Requires **Node.js 22.12+**. No browser install unless you opt into observeEvents (see docs).
+Requires **Node.js 22.12+**. No browser install unless you opt into observe
+(see docs).
 
-Requests to websites use a `pend-analytics/VERSION` user agent so a site owner reading
-their logs can identify or block us.
+Requests to websites use a `pend-analytics/VERSION` user agent so a site owner
+reading their logs can identify or block us.
 
 ### Install
 
@@ -76,11 +73,12 @@ npm install github:pendulumdev/pend-audit-analytics#v0.2.0
 ```
 
 Installing from git compiles `dist/` on install via the `prepare` script, so
-both the CLI and the `./types` export resolve. Distribution is git tags and
-GitHub Releases; npm under `@pendulumdev` may be released. See
-[ROADMAP.md](ROADMAP.md).
+both the CLI and the `./types` export resolve. If you only need the types for
+a report UI, make it a `devDependency` - every export is compile-time only.
+Distribution is git tags and GitHub Releases; npm under `@pendulumdev` is not
+scheduled. See [ROADMAP.md](ROADMAP.md).
 
-### Install from a clone:
+From a clone:
 
 ```bash
 git clone https://github.com/pendulumdev/pend-audit-analytics.git
@@ -93,15 +91,12 @@ npm link          # exposes `pend-analytics` on your PATH
 Or without linking: `npx tsx src/cli.ts --help`, or `node dist/cli.js --help`
 after a build.
 
----
-
-## Use in a project
+### Use in a project
 
 ```bash
-pend-analytics init                 # writes analytics.toml
-# edit project, baseUrl, Search Console siteUrl, and GA4 propertyId
-# set GOOGLE_APPLICATION_CREDENTIALS to a service-account JSON
-pend-analytics audit                # -> analytics-out/run.json
+pend-analytics init                 # asks project / URL / GSC / GA4 / credentials / PageSpeed; writes audit-config-analytics.toml
+pend-analytics audit                # -> out/analytics.json
+pend-analytics audit -o reports/site.json
 pend-analytics mcp                  # MCP stdio (Cursor / Claude Desktop)
 pend-analytics mcp --http           # Streamable HTTP on 127.0.0.1:3000/mcp
 ```
@@ -125,10 +120,7 @@ Cursor `mcp.json`:
 }
 ```
 
-Hosted HTTP on the public internet is an Arc Lightsail concern, not this CLI.
-`--http` binds loopback by default.
-
----
+This CLI does not host public HTTP. `--http` binds loopback by default.
 
 ## Develop
 
@@ -146,12 +138,12 @@ Keep the dependency surface small: commander, TOML, zod, MCP SDK, and
 `google-auth-library`. Playwright is optional and only needed for observe.
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-### Versioning and tags
+## Versioning and tags
 
 - Version source of truth: root `package.json`, which
   `pend-analytics --version` reads
 - A release is an annotated git tag `vX.Y.Z` on `main`
-- Consumers should pin the tag, not a branch
+- Consumers should pin the tag, not a branch, and fail closed on a mismatch
 - Write `docs/releases/vX.Y.Z.md` first - the workflow publishes that file
   as the GitHub Release body. Format and steps: [`docs/releasing.md`](docs/releasing.md)
 
@@ -161,18 +153,17 @@ git push origin main --tags
 ```
 
 Pushing the tag runs the release workflow, which refuses to publish if the tag
-and `package.json` disagree, or if the notes file is missing. It then re-runs
-the full gate against the tagged commit and publishes a GitHub release.
+and `package.json` disagree - otherwise anyone pinning that tag would get a
+build that misreports its own version. It then re-runs the full gate against
+the tagged commit and publishes a GitHub release.
 
-### Limits (intentional)
+## Limits (intentional)
 
 - Does not produce a readiness score
 - Does not predict rankings or replace keyword research
 - API failures soft-fail into the report rather than failing the run
 - Observe (Chromium collect intercept) is off by default
 - Needs a Google service account with read access to Search Console and/or GA4
-
----
 
 ## Contributing
 
@@ -182,12 +173,10 @@ Prefer small, single-purpose changes. Start with
 [CONTRIBUTING.md](CONTRIBUTING.md); report vulnerabilities per
 [SECURITY.md](SECURITY.md).
 
-### Contributors
+## Contributors
 
 - **[Pendulum](https://pendulumdev.co.uk)** - lead development and maintenance
 - **[Devhalls](https://github.com/devhalls)** - primary author
-
----
 
 ## License
 
@@ -199,8 +188,8 @@ Prefer small, single-purpose changes. Start with
 <!-- Badge definitions (reference-style; for-the-badge, black) -->
 [Pendulum-shield]: https://img.shields.io/badge/pendulum-000000?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyBpZD0iTGF5ZXJfMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgdmlld0JveD0iMCAwIDE2NSAxNjUiPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0ibGluZWFyLWdyYWRpZW50IiB4MT0iMCIgeTE9IjgzLjUiIHgyPSIxNjEuMzkiIHkyPSI4My41IiBncmFkaWVudFRyYW5zZm9ybT0idHJhbnNsYXRlKDAgMTY2KSBzY2FsZSgxIC0xKSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzMyYjdkNiIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI2Y0OTYzYyIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIxNjUiIGhlaWdodD0iMTY1IiBzdHlsZT0iZmlsbDp1cmwoI2xpbmVhci1ncmFkaWVudCk7Ii8+PHBhdGggZD0iTTU0LjA4LDEzM2gtMjUuOThWMzMuMDNoNDEuMzZjMTEuMjIsMCwxOS44MiwyLjkyLDI1Ljc4LDguNzVzOC45NSwxNC4wNSw4Ljk1LDI0LjY2LTIuOTgsMTguODMtOC45NSwyNC42NmMtNS45Niw1LjgzLTE0LjU2LDguNzUtMjUuNzgsOC43NWgtMTUuMzhzMCwzMy4xNSwwLDMzLjE1Wk01NC4wOCw3OC45aDguNjJjOS41NCwwLDE0LjMyLTQuMTUsMTQuMzItMTIuNDZzLTQuNzctMTIuNDYtMTQuMzItMTIuNDZoLTguNjJ2MjQuOTNoMFpNMTQzLjEsMzNsLTI2LjExLDEwMGgtMjVsMjYuMTEtMTAwaDI1WiIgc3R5bGU9ImZpbGw6I2ZmZjsiLz48L3N2Zz4=
 [Pendulum-url]: https://pendulumdev.co.uk/
-[Status-shield]: https://img.shields.io/badge/status-stable-000000?style=for-the-badge
-[Status-url]: README.md
+[Status-shield]: https://img.shields.io/badge/status-production-000000?style=for-the-badge
+[Status-url]: ROADMAP.md
 [Node-shield]: https://img.shields.io/badge/node-22.12+-000000?style=for-the-badge&logo=nodedotjs
 [Node-url]: https://nodejs.org/
 [GA4-shield]: https://img.shields.io/badge/GA4-000000?style=for-the-badge&logo=googleanalytics

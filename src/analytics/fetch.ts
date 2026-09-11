@@ -14,7 +14,7 @@ export interface FetchAnalyticsOptions {
   config: AnalyticsConfig;
   /** Site origin used for the public HTML tag scan. */
   baseUrl?: string;
-  /** Engine outDir - PSI final screenshots land under `psi-shots/`. */
+  /** Directory next to --out; PSI final screenshots land under `psi-shots/`. */
   outDir?: string;
 }
 
@@ -63,9 +63,9 @@ export async function fetchAnalyticsBundle(
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const observed = await maybeObserve(config, pageUrl ? [pageUrl] : [], errors);
-    const crux = await maybeCrux(opts.baseUrl, errors);
-    const psi = await maybePsi(pageUrl, errors, opts.outDir);
-    const rivals = await maybeRivals(config.rivals, errors);
+    const crux = await maybeCrux(opts.baseUrl, config.pagespeedApiKey, errors);
+    const psi = await maybePsi(pageUrl, config.pagespeedApiKey, errors, opts.outDir);
+    const rivals = await maybeRivals(config.rivals, config.pagespeedApiKey, errors);
     const events = eventsOrUndefined(configured, [], observed);
     return {
       range,
@@ -159,9 +159,9 @@ export async function fetchAnalyticsBundle(
 
   const observeUrls = pageUrl ? [pageUrl, ...extraUrls] : [];
   const observed = await maybeObserve(config, observeUrls, errors);
-  const crux = await maybeCrux(opts.baseUrl, errors);
-  const psi = await maybePsi(pageUrl, errors, opts.outDir);
-  const rivals = await maybeRivals(config.rivals, errors);
+  const crux = await maybeCrux(opts.baseUrl, config.pagespeedApiKey, errors);
+  const psi = await maybePsi(pageUrl, config.pagespeedApiKey, errors, opts.outDir);
+  const rivals = await maybeRivals(config.rivals, config.pagespeedApiKey, errors);
 
   const events = eventsOrUndefined(configured, received, observed);
   return withInsights({
@@ -179,10 +179,14 @@ export async function fetchAnalyticsBundle(
 
 async function maybeRivals(
   hosts: readonly string[] | undefined,
+  pagespeedKey: string | undefined,
   errors: AnalyticsError[],
 ): Promise<AnalyticsBundle["rivals"] | undefined> {
   if (!hosts?.length) return undefined;
-  const rivals = await observeNamedRivals({ hosts });
+  const rivals = await observeNamedRivals({
+    hosts,
+    ...(pagespeedKey !== undefined && { apiKey: pagespeedKey }),
+  });
   for (const row of rivals) {
     if (row.error) {
       errors.push({ source: "rival", message: `${row.host}: ${row.error}` });
@@ -215,10 +219,11 @@ async function maybeObserve(
 
 async function maybePsi(
   homeUrl: string,
+  pagespeedKey: string | undefined,
   errors: AnalyticsError[],
   outDir?: string,
 ): Promise<AnalyticsBundle["psi"] | undefined> {
-  const apiKey = pagespeedApiKey();
+  const apiKey = pagespeedApiKey(pagespeedKey);
   const jobs = selectPsiJobs(homeUrl);
   if (!apiKey || !jobs.length) return undefined;
   try {
@@ -247,9 +252,10 @@ async function maybePsi(
 
 async function maybeCrux(
   baseUrl: string | undefined,
+  pagespeedKey: string | undefined,
   errors: AnalyticsError[],
 ): Promise<AnalyticsBundle["crux"] | undefined> {
-  const apiKey = pagespeedApiKey();
+  const apiKey = pagespeedApiKey(pagespeedKey);
   const origin = originFromBaseUrl(baseUrl ?? "");
   if (!apiKey || !origin) return undefined;
   try {

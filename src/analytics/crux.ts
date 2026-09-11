@@ -4,10 +4,12 @@ import { USER_AGENT } from "../version.js";
 const CRUX_URL = "https://chromeuxreport.googleapis.com/v1/records:queryRecord";
 const FETCH_TIMEOUT_MS = 12_000;
 
-/** Platform API key shared with PageSpeed Insights. */
-export function pagespeedApiKey(): string | undefined {
-  const key = process.env.PAGESPEED_API_KEY?.trim();
-  return key || undefined;
+/** Platform API key shared with PageSpeed Insights. Env wins over config. */
+export function pagespeedApiKey(fromConfig?: string): string | undefined {
+  const env = process.env.PAGESPEED_API_KEY?.trim();
+  if (env) return env;
+  const cfg = fromConfig?.trim();
+  return cfg || undefined;
 }
 
 /** Scheme + host for CrUX origin queries. */

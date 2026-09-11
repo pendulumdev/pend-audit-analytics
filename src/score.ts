@@ -8,7 +8,7 @@ export function unscoredSummary(): ScoreSummary {
   return {
     automatedReadiness: 0,
     worstPageScore: 0,
-    band: "Critical gaps",
+    band: "Good",
     burden: {
       critical: 0,
       serious: 0,

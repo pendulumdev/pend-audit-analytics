@@ -73,5 +73,5 @@ Rules:
 
 `0.x` minors are for a new capability or a floor that drops a previously
 supported runtime. Patches are fixes and docs that do not change the
-`run.json` contract. A change to that contract, `analytics.toml` keys, or
+`--out` JSON contract. A change to that contract, `audit-config-analytics.toml` keys, or
 `src/index.ts` exports is a breaking change - say so in the opening line.

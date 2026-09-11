@@ -6,6 +6,7 @@ Thanks for looking. Small, single-purpose changes get merged fastest.
 
 ```bash
 npm install
+npm run hooks
 npm test
 ```
 
@@ -67,7 +68,9 @@ property.
 
 ## Commits
 
-Tag-line only, no body:
+Tag-line only. Every line is a tag line; one tag per line; 72 chars or fewer;
+no trailing period; no free-form body. Install the hook with `npm run hooks`
+(sets `core.hooksPath` to `.githooks`).
 
 ```
 [ADD] Surface organic daily rows in the GA4 bundle
@@ -75,7 +78,8 @@ Tag-line only, no body:
 [DOC] Split the observe walkthrough out of the README
 ```
 
-Tags in use: `[ADD]` `[FIX]` `[CHG]` `[UPD]` `[DOC]` `[TST]` `[CFG]` `[RM]`.
+Allowed tags: `[ADD]` `[UPD]` `[FIX]` `[DEL]` `[REF]` `[DOC]` `[TST]` `[CFG]`
+`[DEP]` `[SEC]` `[PRF]` `[REV]`. Enforced by `.githooks/commit-msg`.
 
 ## Releases
 
@@ -86,6 +90,6 @@ are in [`docs/releasing.md`](docs/releasing.md). A filled example is
 
 ## Reporting bugs
 
-Include the relevant slice of `run.json` and what you expected instead. Strip
-property ids and credential paths before you paste. For security issues do
-not open an issue - see [SECURITY.md](SECURITY.md).
+Include the relevant slice of the analytics JSON and what you expected
+instead. Strip property ids and credential paths before you paste. For
+security issues do not open an issue - see [SECURITY.md](SECURITY.md).

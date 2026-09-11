@@ -12,7 +12,6 @@ function baseConfig(analytics: AnalyticsConfig): AnalyticsEngineConfig {
     project: "t",
     standard: "Pendulum_Analytics_v1",
     baseUrl: "https://example.com",
-    outDir: "analytics-out",
     analytics,
   };
 }
@@ -72,11 +71,13 @@ describe("runAnalyticsPull", () => {
 
     assert.equal(run.tool, "@pendulumdev/analytics");
     assert.equal(run.standard, "Pendulum_Analytics_v1");
-    assert.equal(run.catalogVersion, 0);
+    assert.equal("catalogVersion" in run, false);
+    assert.equal("checkLinks" in run, false);
+    assert.equal("disclaimer" in run, false);
     assert.equal(run.pages.length, 0);
     assert.equal(run.findings.length, 0);
     assert.equal(run.score.automatedReadiness, 0);
-    assert.equal(run.score.band, "Critical gaps");
+    assert.equal(run.score.band, "Good");
     assert.deepEqual(run.analytics, bundle);
     assert.equal(run.timing?.browserLaunchMs, 0);
     assert.equal(run.timing?.crawlMs, 0);

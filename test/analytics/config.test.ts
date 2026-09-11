@@ -13,7 +13,6 @@ function writeToml(body: string): string {
     `project = "t"
 standard = "Pendulum_Analytics_v1"
 baseUrl = "https://example.com"
-outDir = "analytics-out"
 ${body}
 `,
     "utf8",
@@ -35,7 +34,6 @@ propertyId = "properties/123456789"
 `);
     const cfg = loadConfig(path);
     assert.equal(cfg.standard, "Pendulum_Analytics_v1");
-    assert.equal(cfg.outDir, "analytics-out");
     assert.equal(cfg.analytics.enabled, true);
     assert.equal(cfg.analytics.searchConsole?.siteUrl, "sc-domain:example.com");
     assert.equal(cfg.analytics.ga4?.propertyId, "123456789");
@@ -43,15 +41,14 @@ propertyId = "properties/123456789"
     assert.equal(cfg.analytics.rangeDays, 28);
   });
 
-  it("folds Arc-style top-level rangeDays into a nested table", () => {
-    const dir = mkdtempSync(join(tmpdir(), "pend-analytics-arc-"));
+  it("folds top-level rangeDays into a nested table", () => {
+    const dir = mkdtempSync(join(tmpdir(), "pend-analytics-cfg-"));
     const path = join(dir, "analytics.toml");
     writeFileSync(
       path,
       `project = "t"
 standard = "Pendulum_Analytics_v1"
 baseUrl = "https://example.com"
-outDir = "analytics-out"
 rangeDays = 14
 comparePrevious = false
 

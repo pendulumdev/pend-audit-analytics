@@ -33,7 +33,7 @@ in [`docs/security.md`](docs/security.md).
 - **This engine holds a Google service account.** A key file is read from
   disk and exchanged for read-only tokens. See `docs/security.md` for what
   is and is not written to the report.
-- **`outDir` is not sanitised** beyond path resolution.
+- **`--out` is not sanitised** beyond path resolution.
 
 Reports that consist only of one of the above, without a concrete escalation
 beyond what is documented, will be closed with a pointer here.

@@ -1,11 +1,18 @@
 {
   "name": "@pendulumdev/analytics",
   "version": "0.2.0",
-  "description": "Pendulum Search Console and GA4 analytics CLI (JSON run.json output)",
+  "description": "Pendulum Search Console and GA4 analytics CLI (JSON out/analytics.json output)",
   "keywords": [
     "analytics",
-    "search-console",
+    "google-analytics",
     "ga4",
+    "search-console",
+    "google-search-console",
+    "pagespeed-insights",
+    "crux",
+    "mcp",
+    "typescript",
+    "cli",
     "pendulum"
   ],
   "license": "MIT",
@@ -57,6 +64,7 @@
     "build": "tsc",
     "dev": "tsx src/cli.ts",
     "start": "node dist/cli.js",
+    "hooks": "git config core.hooksPath .githooks",
     "prepare": "npm run build",
     "prepublishOnly": "npm run build"
   },
@@ -65,12 +73,12 @@
     "commander": "^15.0.0",
     "google-auth-library": "^11.0.2",
     "smol-toml": "^1.7.1",
-    "zod": "^4.4.3"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.10",
-    "@types/node": "^26.1.2",
-    "tsx": "^4.23.5",
+    "@biomejs/biome": "2.5.12",
+    "@types/node": "^26.5.0",
+    "tsx": "^4.23.13",
     "typescript": "^7.0.2"
   },
   "typesVersions": {

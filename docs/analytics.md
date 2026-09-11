@@ -1,5 +1,7 @@
 # Search Console and GA4
 
+[Input](input.md) · [Output](output.md) · [Analytics](analytics.md) (this page) · [Security](security.md)
+
 This engine pulls Google time-series into `run.analytics`. The data is
 **unscored** - it never becomes a readiness number, because how a property
 performed is a different question from whether a site is built correctly.
@@ -11,8 +13,8 @@ configured at all.
 ## Which command to use
 
 ```bash
-pend-analytics audit -c analytics.toml
-# -> analytics-out/run.json  (run.analytics populated; score is unscored zeros)
+pend-analytics audit -c audit-config-analytics.toml
+# -> out/analytics.json  (run.analytics populated; score is unscored zeros)
 ```
 
 `pend-analytics audit` force-enables the configured sources even when
@@ -72,7 +74,7 @@ export GOOGLE_APPLICATION_CREDENTIALS="$HOME/Secrets/analytics-sa.json"
 ```
 
 ```toml
-# Or a path in analytics.toml. The JSON file itself still stays out of git.
+# Or a path in audit-config-analytics.toml. The JSON file itself still stays out of git.
 [analytics]
 credentialsPath = "/Users/you/Secrets/analytics-sa.json"
 ```
@@ -98,7 +100,8 @@ propertyId = "123456789"
 
 `pend-analytics audit` also GETs the `baseUrl` HTML, and the public `gtm.js`
 when a GTM container is present, and writes `run.analytics.googleSetup`:
-collisions, snippets and destinations. No Playwright involved unless you opt
+unique snippets (destinations on the snippet they were read from, plus the
+pages they appear on) and collisions. No Playwright involved unless you opt
 into observe.
 
 Once Search Console and GA4 return, it samples up to five top landing URLs (GSC
@@ -109,9 +112,37 @@ When the public GTM file exposes it, a trigger type is included - click, page
 view, form, or custom event. Tag fetch failures soft-fail as `errors[]` with
 source `tags`.
 
-## Page experience
+## 4. PageSpeed API key (optional)
 
-Set `PAGESPEED_API_KEY` and the pull also writes:
+CrUX field vitals and the homepage PageSpeed lab check share one Google Cloud
+**API key**. This is not the service account. The same Cloud project can hold
+both. Skip this section if you only want Search Console and GA4.
+
+1. In [Google Cloud Console](https://console.cloud.google.com/) select the
+   project you already use for credentials.
+2. Enable both APIs (**APIs & Services -> Library**):
+   - [PageSpeed Insights API](https://console.cloud.google.com/apis/library/pagespeedonline.googleapis.com)
+   - [Chrome UX Report API](https://console.cloud.google.com/apis/library/chromeuxreport.googleapis.com)
+3. **APIs & Services -> Credentials -> Create credentials -> API key**.
+4. Restrict the key to those two APIs, then copy it. Do not commit it.
+5. Point the CLI at the key one of two ways.
+
+```bash
+# Environment - preferred for local shells and CI secrets
+export PAGESPEED_API_KEY="AIza..."
+```
+
+```toml
+# Or the key in audit-config-analytics.toml. Prefer the environment in git.
+[analytics]
+pagespeedApiKey = "AIza..."
+```
+
+`pend-analytics init` asks for the key after the service account path. Enter
+skips and leaves `PAGESPEED_API_KEY` as the source. When both are set, the
+environment wins.
+
+With a key and a `baseUrl`, the pull also writes:
 
 - `run.analytics.crux` - origin Chrome UX Report vitals
 - `run.analytics.psi` - homepage PageSpeed Insights lab rows, mobile and desktop,
@@ -121,16 +152,17 @@ Set `PAGESPEED_API_KEY` and the pull also writes:
   scores, and estimated savings only - never filmstrip, details tables, or
   base64 in `run.json`.
 
-Final Lighthouse screenshots write to `psi-shots/` beside `run.json` as paths,
+Final Lighthouse screenshots write to `dirname(--out)/psi-shots/` as paths,
 not base64. Without the key both sections are simply omitted. A CrUX 404 means
 the origin has no field record yet, which is not a failed run.
 
 The key is stripped from any error text before it reaches `run.json`, so a
-failing request cannot leak it into a stored report.
+failing request cannot leak it into a stored report. Google's lab fetch is
+not aborted the way `observeEvents` aborts collect beacons.
 
 ## Observe (optional)
 
-Off by default. Set `observeEvents = true` in `analytics.toml`, or
+Off by default. Set `observeEvents = true` in the project config, or
 `ANALYTICS_OBSERVE=1`. `SEO_ANALYTICS_OBSERVE` is still accepted for
 compatibility. The probe launches Chromium, intercepts GA collect on a cold
 load, then aborts so client GA4 is not inflated. Playwright is not a required
@@ -146,6 +178,7 @@ dependency - install it yourself if you want this probe.
 | GA4 `403` | Add the service account email as **Viewer** on that GA4 property |
 | Empty series | No data in the window, or Search Console lag - widen `rangeDays` |
 | `analytics observe: ...` | Chromium observe probe failed, soft. Off by default; set `observeEvents` or `ANALYTICS_OBSERVE=1` |
-| No page experience data | Set `PAGESPEED_API_KEY`. Missing key omits the section by design |
+| No page experience data | Set `PAGESPEED_API_KEY` or `analytics.pagespeedApiKey`. Missing key omits the section by design |
+| PageSpeed or CrUX `403` | Enable PageSpeed Insights API and Chrome UX Report API, then restrict the key to those two |
 | No CrUX origin data | Origin is too new or too quiet for CrUX. Expected, not a failure |
 | `analytics psi: ...` | PageSpeed Insights failed for that URL, soft. Quota and timeout still succeed the run |

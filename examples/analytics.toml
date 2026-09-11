@@ -1,23 +1,54 @@
 # Annotated pend-analytics config example.
 # Copy via `pend-analytics init`, then change project, baseUrl and property
 # ids to your own. Every URL below points at example.com on purpose, so
-# running this file unchanged audits nothing real.
+# running this file unchanged pulls nothing real.
+# Output path is CLI-only: pend-analytics audit --out out/analytics.json
+# Full setup: docs/input.md and docs/analytics.md
 
 project = "Example Project"
 standard = "Pendulum_Analytics_v1"
-baseUrl = "https://example.com"
-outDir = "analytics-out"
 
-# Search Console / GA4 pull (unscored). Full setup: docs/analytics.md
+# Site origin for the public HTML tag scan, CrUX, and homepage PageSpeed lab.
+# Omit to skip those probes.
+baseUrl = "https://example.com"
+
+# Search Console / GA4 pull (unscored). At least one source is required.
 [analytics]
 enabled = true
-# credentialsPath = ""          # empty -> GOOGLE_APPLICATION_CREDENTIALS
-rangeDays = 28
-comparePrevious = true
-# observeEvents = false         # Chromium collect intercept; or ANALYTICS_OBSERVE=1
 
+# Path to a service-account JSON. Empty or omit uses
+# GOOGLE_APPLICATION_CREDENTIALS.
+# credentialsPath = "/Users/you/Secrets/analytics-sa.json"
+
+# PageSpeed Insights and CrUX API key. Empty or omit uses PAGESPEED_API_KEY.
+# The environment wins when both are set. Do not commit the key.
+# pagespeedApiKey = "AIza..."
+
+# Inclusive day count for the primary window (max 90). Ignored when
+# startDate and endDate are set together.
+rangeDays = 28
+
+# YYYY-MM-DD overrides. Must be set together.
+# startDate = "2026-01-01"
+# endDate = "2026-01-28"
+
+# Compare against the immediately preceding window of equal length.
+comparePrevious = true
+
+# Chromium collect intercept on a cold load, then abort so client GA4
+# is not inflated. Also ANALYTICS_OBSERVE=1.
+# observeEvents = false
+
+# Named rival https origins. Public HTML plus CrUX only. Never a Google
+# property of yours.
+# rivals = ["https://example.com"]
+
+# Domain property (sc-domain:host) or URL-prefix with a trailing slash
+# (https://example.com/).
 [analytics.searchConsole]
 siteUrl = "sc-domain:example.com"
+# siteUrl = "https://example.com/"
 
+# Numeric GA4 property id. A properties/ prefix is stripped.
 [analytics.ga4]
 propertyId = "123456789"

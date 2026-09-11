@@ -3,7 +3,7 @@ name: pend-analytics
 description: >-
   Pull Pendulum Search Console and GA4 analytics via pend-analytics MCP or CLI.
   Use when the agent should inspect GSC/GA4 traffic, public tags, or a stored
-  analytics run.json. This is not a readiness score.
+  analytics JSON. This is not a readiness score.
 ---
 
 # Pendulum analytics - LLM agent guide
@@ -16,7 +16,7 @@ zeros on purpose. It does not predict rankings or invent keywords.
 1. Prefer MCP tools on this server. Fall back to `npx pend-analytics ...` in
    a shell.
 2. Read JSON from the tool result or CLI stdout.
-3. Never dump a full `run.json` into context. Call `run_summarize` first.
+3. Never dump a full analytics JSON into context. Call `run_summarize` first.
 
 **Stdio (Cursor / Claude Desktop):**
 
@@ -37,10 +37,11 @@ unless you intend to expose a Google-API client on that machine.
 
 ## Workflow
 
-1. `docs_get` with `configuration` / `output` / `analytics` / `security`.
-2. `config_validate` on an `analytics.toml` - no Google call.
-3. `analytics_audit_run` - writes `{outDir}/run.json`, returns a projection
-   (`sources`, `insightCount`, `errorCount`, `insightIds`, `runPath`).
+1. `docs_get` with `input` / `output` / `analytics` / `security`.
+2. `config_validate` on an `audit-config-analytics.toml` - no Google call.
+3. `analytics_audit_run` - writes `--out` (default `out/analytics.json`),
+   returns a projection (`sources`, `insightCount`, `errorCount`,
+   `insightIds`, `runPath`).
 4. `run_summarize` on the stored run before discussing numbers.
 
 There is no catalog and no checklist.
@@ -57,8 +58,9 @@ There is no catalog and no checklist.
 | Task | Command |
 |------|---------|
 | Init | `pend-analytics init` |
-| Pull | `pend-analytics audit -c analytics.toml` |
+| Pull | `pend-analytics audit -c audit-config-analytics.toml` |
 | Validate via MCP | `config_validate` |
 
-Requires Node 22.12+. A Google service account with read access. Playwright only
+Requires Node 22.12+. A Google service account with read access. PageSpeed /
+CrUX need `PAGESPEED_API_KEY` or `analytics.pagespeedApiKey`. Playwright only
 if you opt into observe.

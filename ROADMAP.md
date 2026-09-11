@@ -1,8 +1,8 @@
 # Roadmap
 
-Status: **MVP**. The Search Console / GA4 pull works and is tested. The gaps
-below are real and are listed here rather than left for someone to discover
-from a surprising report.
+Status: **production**. The Search Console / GA4 pull is the supported product.
+The gaps below are still real and are listed here rather than left for someone
+to discover from a surprising report.
 
 ## Known gaps
 
@@ -36,9 +36,10 @@ annotated tag rather than track a branch. Publishing to npm under the
 
 Treat these as public API. Changing any of them is a breaking change:
 
-- The `run.json` shape, exported as `AuditRun` from
+- The `--out` JSON shape, exported as `AuditRun` from
   `@pendulumdev/analytics/types`
-- `analytics.toml` key names
+- `audit-config-analytics.toml` key names
+- The PageSpeed screenshot path scheme under `dirname(--out)/psi-shots/`
 - Everything re-exported from `src/index.ts`
 
 Anything not re-exported from `src/index.ts` is internal and may change in a
@@ -49,14 +50,14 @@ patch release.
 `pend-analytics mcp` (stdio) and `pend-analytics mcp --http` (loopback
 Streamable HTTP) expose docs, config validate, projected
 `analytics_audit_run`, and `run_summarize`. See [`SKILL.md`](SKILL.md). Public
-hosted HTTP is an Arc Lightsail concern, not this CLI.
+hosted HTTP is out of scope for this CLI.
 
 ## Not planned
 
 - **A readiness score.** Traffic evidence is not a rating. The zeros in
   `run.score` are intentional.
 - **Ranking prediction.** Nothing in a GSC/GA4 pull predicts search position.
-- **A report UI.** `run.json` is the interface. Presentation belongs to
-  whatever consumes it.
+- **A report UI.** `out/analytics.json` is the interface. Presentation belongs
+  to whatever consumes it.
 - **Paid SERP, backlink, or keyword APIs.** Off-page data products stay out
   of this engine.

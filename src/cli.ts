@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-import { resolve } from "node:path";
 import { Command } from "commander";
 import { runAnalyticsPull } from "./analytics/runner.js";
-import { loadConfig, writeInitConfig } from "./config.js";
+import { DEFAULT_ANALYTICS_CONFIG, loadConfig } from "./config.js";
+import { formatInitSummary, runInit } from "./init.js";
 import { parseMcpArgs, startMcp } from "./mcp/server.js";
-import { writeReports } from "./report/write.js";
+import { releaseStdin } from "./prompt.js";
+import { DEFAULT_ANALYTICS_OUT, writeReports } from "./report/write.js";
 import { VERSION } from "./version.js";
 
 const program = new Command();
@@ -16,14 +17,21 @@ program
 
 program
   .command("init")
-  .description("Write analytics.toml in the current directory")
-  .option("-f, --force", "Overwrite existing analytics.toml", false)
-  .option("-c, --config <path>", "Config path", "analytics.toml")
-  .option("-p, --project <name>", "Project name")
-  .action((opts: { force: boolean; config: string; project?: string }) => {
+  .description("Ask a few questions and write audit-config-analytics.toml")
+  .option("-f, --force", "Overwrite an existing config file", false)
+  .option(
+    "-c, --config <path>",
+    "Config path to write (default audit-config-analytics.toml)",
+  )
+  .action(async (opts: { force: boolean; config?: string }) => {
     try {
-      writeInitConfig(opts.config, opts.force, opts.project);
-      console.error(`wrote ${resolve(opts.config)}`);
+      const result = await runInit({
+        force: opts.force,
+        ...(opts.config !== undefined && { config: opts.config }),
+      });
+      process.stdout.write(formatInitSummary(result));
+      releaseStdin();
+      process.exit(0);
     } catch (err) {
       fail(err);
     }
@@ -31,16 +39,15 @@ program
 
 program
   .command("audit")
-  .description("Pull Search Console / GA4 into run.json (unscored analytics bundle)")
-  .option("-c, --config <path>", "Config path", "analytics.toml")
-  .option("-o, --out <dir>", "Override outDir from config")
-  .action(async (opts: { config: string; out?: string }) => {
+  .description("Pull Search Console / GA4 and write JSON to --out")
+  .option("-c, --config <path>", "Config path", DEFAULT_ANALYTICS_CONFIG)
+  .option("-o, --out <path>", "Output file path", DEFAULT_ANALYTICS_OUT)
+  .action(async (opts: { config: string; out: string }) => {
     try {
       const config = loadConfig(opts.config);
-      if (opts.out) config.outDir = opts.out;
       console.error(`analytics pull ${config.project}...`);
-      const run = await runAnalyticsPull(config);
-      const written = writeReports(run, config.outDir);
+      const run = await runAnalyticsPull(config, { outPath: opts.out });
+      const written = writeReports(run, opts.out);
       const errCount = run.analytics.errors?.length ?? 0;
       const sources = [
         run.analytics.gsc ? "gsc" : null,

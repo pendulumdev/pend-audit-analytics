@@ -45,6 +45,12 @@ gtag('config', 'G-BBBBBB');
 </script>
 </head></html>`;
 
+function dests(page: {
+  snippets: Array<{ destinations: Array<{ family: string; id: string }> }>;
+}) {
+  return page.snippets.flatMap((s) => s.destinations);
+}
+
 describe("parseGoogleHtml", () => {
   it("extracts a GTM container from the install snippet", () => {
     const page = parseGoogleHtml(GTM_HTML, "https://example.com/");
@@ -53,7 +59,8 @@ describe("parseGoogleHtml", () => {
       true,
     );
     assert.equal(page.snippets[0]?.location, "head");
-    assert.ok(page.destinations.some((d) => d.id === "GTM-XXXX"));
+    assert.ok(dests(page).some((d) => d.id === "GTM-XXXX"));
+    assert.ok(page.snippets.some((s) => s.destinations.some((d) => d.id === "GTM-XXXX")));
   });
 
   it("extracts gtag measurement IDs and consent", () => {
@@ -62,8 +69,8 @@ describe("parseGoogleHtml", () => {
       page.snippets.some((s) => s.kind === "gtag"),
       true,
     );
-    assert.ok(page.destinations.some((d) => d.family === "ga4" && d.id === "G-BBBBBB"));
-    assert.ok(page.destinations.some((d) => d.family === "consent"));
+    assert.ok(dests(page).some((d) => d.family === "ga4" && d.id === "G-BBBBBB"));
+    assert.ok(dests(page).some((d) => d.family === "consent"));
   });
 
   it("extracts leftover Universal Analytics", () => {
@@ -72,12 +79,18 @@ describe("parseGoogleHtml", () => {
       page.snippets.some((s) => s.kind === "ua"),
       true,
     );
-    assert.ok(page.destinations.some((d) => d.id === "UA-123-1"));
+    assert.ok(dests(page).some((d) => d.id === "UA-123-1"));
   });
 
   it("finds two GA4 IDs on one page", () => {
     const page = parseGoogleHtml(DUAL_GA4, "https://example.com/");
-    const ga4 = page.destinations.filter((d) => d.family === "ga4").map((d) => d.id);
+    const ga4 = [
+      ...new Set(
+        dests(page)
+          .filter((d) => d.family === "ga4")
+          .map((d) => d.id),
+      ),
+    ];
     assert.deepEqual(ga4.sort(), ["G-AAAAAA", "G-BBBBBB"]);
   });
 
@@ -90,9 +103,7 @@ describe("parseGoogleHtml", () => {
       page.snippets.some((s) => s.kind === "gtag"),
       true,
     );
-    assert.ok(
-      page.destinations.some((d) => d.family === "ga4" && d.id === "G-CDEC0MPC01"),
-    );
+    assert.ok(dests(page).some((d) => d.family === "ga4" && d.id === "G-CDEC0MPC01"));
     assert.ok(page.snippets[0]?.text.includes("G-CDEC0MPC01"));
   });
 });
@@ -179,7 +190,11 @@ describe("collectGoogleSetup", () => {
       },
     });
     assert.equal(error, undefined);
-    assert.equal(setup.pages[0]?.destinations[0]?.id, "GTM-XXXX");
+    assert.deepEqual(setup.urls, ["https://example.com/"]);
+    assert.ok(
+      setup.snippets.some((s) => s.destinations.some((d) => d.id === "GTM-XXXX")),
+    );
+    assert.deepEqual(setup.snippets[0]?.pages, ["https://example.com/"]);
     assert.equal(setup.gtm?.[0]?.containerId, "GTM-XXXX");
     assert.equal(setup.gtm?.[0]?.tagTypeCounts?.__googtag, 1);
   });
@@ -192,7 +207,8 @@ describe("collectGoogleSetup", () => {
         throw new Error("ENOTFOUND");
       },
     });
-    assert.equal(setup.pages.length, 0);
+    assert.equal(setup.urls.length, 0);
+    assert.equal(setup.snippets.length, 0);
     assert.match(error ?? "", /ENOTFOUND/);
   });
 
@@ -210,7 +226,7 @@ describe("collectGoogleSetup", () => {
       },
     });
     assert.equal(error, undefined);
-    assert.equal(setup.pages.length, 2);
+    assert.equal(setup.urls.length, 2);
     assert.ok(setup.collisions.some((c) => c.code === "url-drift"));
     assert.ok(
       setup.collisions
@@ -232,11 +248,19 @@ describe("collectGoogleSetup", () => {
         throw new Error("should use htmlByUrl");
       },
     });
-    assert.equal(setup.pages.length, 2);
+    assert.equal(setup.urls.length, 2);
     assert.equal(
       setup.collisions.some((c) => c.code === "url-drift"),
       false,
     );
+    const gtag = setup.snippets.filter((s) => s.kind === "gtag");
+    assert.ok(gtag.length > 0);
+    for (const snippet of gtag) {
+      assert.deepEqual(snippet.pages, [
+        "https://example.com/",
+        "https://example.com/about",
+      ]);
+    }
   });
 });
 

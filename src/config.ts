@@ -1,29 +1,71 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { parse as parseToml } from "smol-toml";
-import type { AnalyticsConfig, AnalyticsEngineConfig } from "./types.js";
+import {
+  ANALYTICS_STANDARD,
+  type AnalyticsConfig,
+  type AnalyticsEngineConfig,
+} from "./types.js";
 
-export function defaultInitToml(project: string): string {
+export const DEFAULT_ANALYTICS_CONFIG = "audit-config-analytics.toml";
+
+export type InitAnswers = {
+  project: string;
+  baseUrl: string;
+  searchConsoleSiteUrl?: string;
+  ga4PropertyId?: string;
+  credentialsPath?: string;
+  pagespeedApiKey?: string;
+};
+
+function initSourceBlock(answers: InitAnswers): string {
+  const gsc = answers.searchConsoleSiteUrl
+    ? `[analytics.searchConsole]
+siteUrl = ${tomlString(answers.searchConsoleSiteUrl)}`
+    : `# [analytics.searchConsole]
+# siteUrl = "sc-domain:example.com"`;
+  const ga4 = answers.ga4PropertyId
+    ? `[analytics.ga4]
+propertyId = ${tomlString(answers.ga4PropertyId)}`
+    : `# [analytics.ga4]
+# propertyId = "123456789"`;
+  return `${gsc}
+
+${ga4}`;
+}
+
+function credentialsLine(answers: InitAnswers): string {
+  if (answers.credentialsPath) {
+    return `credentialsPath = ${tomlString(answers.credentialsPath)}`;
+  }
+  return `# credentialsPath = ""          # empty -> GOOGLE_APPLICATION_CREDENTIALS`;
+}
+
+function pagespeedLine(answers: InitAnswers): string {
+  if (answers.pagespeedApiKey) {
+    return `pagespeedApiKey = ${tomlString(answers.pagespeedApiKey)}`;
+  }
+  return `# pagespeedApiKey = ""          # empty -> PAGESPEED_API_KEY`;
+}
+
+export function defaultInitToml(answers: InitAnswers): string {
   return `# pend-analytics - Search Console / GA4 pull (unscored).
-# Full setup: docs/configuration.md and docs/analytics.md
+# Write with: pend-analytics audit --out out/analytics.json
+# Full setup: docs/input.md and docs/analytics.md
 
-project = ${tomlString(project)}
-standard = "Pendulum_Analytics_v1"
-baseUrl = "https://example.com"
-outDir = "analytics-out"
+project = ${tomlString(answers.project)}
+standard = "${ANALYTICS_STANDARD}"
+baseUrl = ${tomlString(answers.baseUrl)}
 
 [analytics]
 enabled = true
-# credentialsPath = ""          # empty -> GOOGLE_APPLICATION_CREDENTIALS
+${credentialsLine(answers)}
+${pagespeedLine(answers)}
 rangeDays = 28
 comparePrevious = true
 # observeEvents = false         # Chromium collect intercept; or ANALYTICS_OBSERVE=1
 
-[analytics.searchConsole]
-siteUrl = "sc-domain:example.com"
-
-[analytics.ga4]
-propertyId = "123456789"
+${initSourceBlock(answers)}
 `;
 }
 
@@ -43,19 +85,21 @@ function normalizeConfig(
   raw: Record<string, unknown>,
   source: string,
 ): AnalyticsEngineConfig {
+  if (raw.outDir !== undefined) {
+    throw new Error(`${source}: outDir is no longer a config key; pass --out <path>`);
+  }
   const project = asString(raw.project, "project");
-  const standard = asString(raw.standard ?? "Pendulum_Analytics_v1", "standard");
-  if (standard !== "Pendulum_Analytics_v1" && standard !== "Pendulum_SEO_v1") {
+  const standard = asString(raw.standard ?? ANALYTICS_STANDARD, "standard");
+  if (standard !== ANALYTICS_STANDARD && standard !== "Pendulum_SEO_v1") {
     throw new Error(
-      `${source}: standard must be "Pendulum_Analytics_v1" (legacy Pendulum_SEO_v1 still accepted)`,
+      `${source}: standard must be "${ANALYTICS_STANDARD}" (legacy Pendulum_SEO_v1 still accepted)`,
     );
   }
 
   const baseUrl = optionalString(raw.baseUrl);
-  const outDir = asString(raw.outDir ?? "analytics-out", "outDir");
 
   // Nested [analytics] is the engine contract. Top-level rangeDays /
-  // comparePrevious / credentialsPath (Arc serializer) fold in as fallbacks.
+  // comparePrevious / credentialsPath fold in as fallbacks.
   const nested = raw.analytics;
   const merged: Record<string, unknown> =
     nested && typeof nested === "object" && !Array.isArray(nested)
@@ -69,6 +113,9 @@ function normalizeConfig(
   }
   if (merged.credentialsPath == null && raw.credentialsPath != null) {
     merged.credentialsPath = raw.credentialsPath;
+  }
+  if (merged.pagespeedApiKey == null && raw.pagespeedApiKey != null) {
+    merged.pagespeedApiKey = raw.pagespeedApiKey;
   }
   if (merged.searchConsole == null && raw.searchConsole != null) {
     merged.searchConsole = raw.searchConsole;
@@ -90,9 +137,8 @@ function normalizeConfig(
 
   return {
     project,
-    standard: "Pendulum_Analytics_v1",
+    standard: ANALYTICS_STANDARD,
     ...(baseUrl !== undefined && { baseUrl }),
-    outDir,
     analytics,
   };
 }
@@ -100,6 +146,7 @@ function normalizeConfig(
 function parseAnalytics(raw: Record<string, unknown>, source: string): AnalyticsConfig {
   const enabled = asBool(raw.enabled ?? true, "analytics.enabled");
   const credentialsPath = optionalString(raw.credentialsPath);
+  const pagespeedApiKey = optionalString(raw.pagespeedApiKey);
   const rangeDays = asPositiveInt(raw.rangeDays ?? 28, "analytics.rangeDays");
   if (rangeDays > 90) {
     throw new Error(`${source}: analytics.rangeDays must be <= 90`);
@@ -169,6 +216,7 @@ function parseAnalytics(raw: Record<string, unknown>, source: string): Analytics
     comparePrevious,
     observeEvents,
     ...(credentialsPath !== undefined && { credentialsPath }),
+    ...(pagespeedApiKey !== undefined && { pagespeedApiKey }),
     ...(startDate !== undefined && { startDate }),
     ...(endDate !== undefined && { endDate }),
     ...(searchConsole !== undefined && { searchConsole }),
@@ -183,12 +231,17 @@ function assertYmd(value: string, field: string): void {
   }
 }
 
-export function writeInitConfig(path: string, force: boolean, project?: string): void {
+export function writeInitConfig(
+  path: string,
+  force: boolean,
+  answers: InitAnswers,
+): string {
   const abs = resolve(path);
   if (existsSync(abs) && !force) {
     throw new Error(`${abs} already exists (use --force to overwrite)`);
   }
-  writeFileSync(abs, defaultInitToml(project ?? "My project"), "utf8");
+  writeFileSync(abs, defaultInitToml(answers), "utf8");
+  return abs;
 }
 
 function asString(v: unknown, field: string): string {

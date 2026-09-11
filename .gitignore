@@ -1,7 +1,10 @@
 /node_modules
 /dist
+/out
 /analytics-out
 /analytics.toml
+audit-config-analytics.toml
+audit-config-*.toml
 .env
 .env.*
 *.log

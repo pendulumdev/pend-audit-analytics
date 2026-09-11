@@ -12,8 +12,8 @@ import { dispatchAnalyticsTool } from "./tools.js";
 const INSTRUCTIONS = [
   "Pendulum Search Console and GA4 analytics pull (unscored).",
   "This is Google setup and traffic evidence, not a readiness score.",
-  "Read docs_get, validate analytics.toml with config_validate, then run analytics_audit_run.",
-  "Always call run_summarize on a stored run.json.",
+  "Read docs_get, validate audit-config-analytics.toml with config_validate, then run analytics_audit_run.",
+  "Always call run_summarize on a stored analytics JSON.",
   "Provider errors soft-fail into the report.",
 ].join(" ");
 
@@ -54,19 +54,19 @@ export function createAnalyticsMcpServer(): McpServer {
   tool(
     "config_validate",
     "Config validate",
-    "Parse analytics.toml and list configured sources. Does not call Google APIs.",
+    "Parse audit-config-analytics.toml and list configured sources. Does not call Google APIs.",
     { config: z.string() },
   );
   tool(
     "analytics_audit_run",
     "Analytics audit run",
-    "Pull Search Console / GA4 and write run.json. Returns a projected summary plus runPath. Score is zeros on purpose.",
+    "Pull Search Console / GA4 and write --out (default out/analytics.json). Returns a projected summary plus runPath. Score is zeros on purpose.",
     { config: z.string(), out: z.string().optional() },
   );
   tool(
     "run_summarize",
     "Run summarize",
-    "Project a stored run.json: sources, insight ids, error count. Score is unscored zeros.",
+    "Project a stored analytics JSON: sources, insight ids, error count. Score is unscored zeros.",
     { runPath: z.string() },
   );
 

@@ -80,9 +80,10 @@ async function sitemapSample(origin: string, fetchImpl: FetchLike): Promise<stri
 export async function observeNamedRivals(opts: {
   hosts: readonly string[];
   fetchImpl?: FetchLike;
+  apiKey?: string;
 }): Promise<RivalOriginObservation[]> {
   const fetchImpl = opts.fetchImpl ?? (globalThis.fetch as FetchLike);
-  const apiKey = pagespeedApiKey();
+  const apiKey = pagespeedApiKey(opts.apiKey);
   const out: RivalOriginObservation[] = [];
   for (const raw of opts.hosts) {
     const origin = originFromBaseUrl(raw);
