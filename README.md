@@ -69,7 +69,7 @@ reading their logs can identify or block us.
 As a project dependency, pinned to a release tag:
 
 ```bash
-npm install github:pendulumdev/pend-audit-analytics#v0.2.0
+npm install github:pendulumdev/pend-audit-analytics#v0.3.0
 ```
 
 Installing from git compiles `dist/` on install via the `prepare` script, so
@@ -148,7 +148,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
   as the GitHub Release body. Format and steps: [`docs/releasing.md`](docs/releasing.md)
 
 ```bash
-git tag -a v0.2.0 -m "v0.2.0"
+git tag -a v0.3.0 -m "v0.3.0"
 git push origin main --tags
 ```
 

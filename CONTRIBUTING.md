@@ -86,7 +86,7 @@ Allowed tags: `[ADD]` `[UPD]` `[FIX]` `[DEL]` `[REF]` `[DOC]` `[TST]` `[CFG]`
 Write `docs/releases/vX.Y.Z.md` before you tag. The GitHub Release body is
 that file, not auto-generated notes. Format, headings, and the tag sequence
 are in [`docs/releasing.md`](docs/releasing.md). A filled example is
-[`docs/releases/v0.2.0.md`](docs/releases/v0.2.0.md).
+[`docs/releases/v0.3.0.md`](docs/releases/v0.3.0.md).
 
 ## Reporting bugs
 

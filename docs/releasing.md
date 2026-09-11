@@ -8,7 +8,7 @@ which re-runs the gate and publishes a GitHub Release. The release body is
 The body format follows the
 [cardano-stake-pool-operator-scripts](https://github.com/devhalls/cardano-stake-pool-operator-scripts)
 releases: a one-line product sentence, fixed headed lists, then a support
-badge. See [`releases/v0.2.0.md`](releases/v0.2.0.md) for a filled example.
+badge. See [`releases/v0.3.0.md`](releases/v0.3.0.md) for a filled example.
 
 ## Before you tag
 
