@@ -1,6 +1,6 @@
 {
   "name": "@pendulumdev/analytics",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Pendulum Search Console and GA4 analytics CLI (JSON out/analytics.json output)",
   "keywords": [
     "analytics",
