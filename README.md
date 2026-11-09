@@ -69,7 +69,7 @@ reading their logs can identify or block us.
 As a project dependency, pinned to a release tag:
 
 ```bash
-npm install github:pendulumdev/pend-audit-analytics#v0.3.3
+npm install github:pendulumdev/pend-audit-analytics#v0.3.4
 ```
 
 Installing from git compiles `dist/` on install via the `prepare` script, so
@@ -134,8 +134,9 @@ npm run dev -- audit -c examples/analytics.toml
 The example is covered by tests, so a config key cannot change without the
 example that documents it failing.
 
-Keep the dependency surface small: commander, TOML, zod, MCP SDK, and
-`google-auth-library`. Playwright is optional and only needed for observe.
+Keep the dependency surface small: commander, TOML, zod, MCP SDK,
+`google-auth-library`, and pg for the crawl store. Playwright is optional and
+only needed for observe.
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Versioning and tags
