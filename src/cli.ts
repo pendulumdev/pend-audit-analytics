@@ -6,6 +6,7 @@ import { formatInitSummary, runInit } from "./init.js";
 import { parseMcpArgs, startMcp } from "./mcp/server.js";
 import { releaseStdin } from "./prompt.js";
 import { DEFAULT_ANALYTICS_OUT, writeReports } from "./report/write.js";
+import { storeAnalyticsRun } from "./store/persist.js";
 import { VERSION } from "./version.js";
 
 const program = new Command();
@@ -42,12 +43,15 @@ program
   .description("Pull Search Console / GA4 and write JSON to --out")
   .option("-c, --config <path>", "Config path", DEFAULT_ANALYTICS_CONFIG)
   .option("-o, --out <path>", "Output file path", DEFAULT_ANALYTICS_OUT)
+  .option("--run-id <id>", "Arc audit run id when AUDIT_DATABASE_URL is set")
+  .option("--store-contract <version>", "Crawl store contract version", "1")
   .action(async (opts: { config: string; out: string }) => {
     try {
       const config = loadConfig(opts.config);
       console.error(`analytics pull ${config.project}...`);
       const run = await runAnalyticsPull(config, { outPath: opts.out });
-      const written = writeReports(run, opts.out);
+      const stored = await storeAnalyticsRun(process.argv, run);
+      const written = stored ? null : writeReports(run, opts.out);
       const errCount = run.analytics.errors?.length ?? 0;
       const sources = [
         run.analytics.gsc ? "gsc" : null,
@@ -57,7 +61,7 @@ program
         `analytics ${sources.length ? sources.join("+") : "none"}` +
           (errCount ? ` · ${errCount} provider error(s)` : ""),
       );
-      console.error(`wrote ${written.runJson}`);
+      console.error(written ? `wrote ${written.runJson}` : "stored analytics run");
       // Soft-fail: auth/API errors stay in run.analytics.errors[]; exit 0.
     } catch (err) {
       fail(err);

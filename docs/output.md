@@ -2,6 +2,8 @@
 
 Project output written to `--out`. Default is `out/analytics.json` for `pend-analytics audit`. Shape is `AuditRun` in [`src/types.ts`](../src/types.ts).
 
+When `AUDIT_DATABASE_URL` and `--run-id` are set, `pend-analytics audit` inserts crawl-store contract 1 instead of writing `--out`. `-o` remains the offline file. PSI screenshots still land beside `--out`.
+
 When a PageSpeed key is set, Lighthouse screenshots go under `dirname(--out)/psi-shots/` and each lab row records the relative path as `analytics.psi.pages[].screenshot`. Paths only - image bytes never go into the JSON.
 
 [Input](input.md) · [Output](output.md) (this page) · [Analytics](analytics.md) · [Security](security.md)
