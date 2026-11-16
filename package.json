@@ -70,7 +70,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
-    "commander": "^15.0.0",
+    "commander": "^15.1.0",
     "google-auth-library": "^11.3.2",
     "pg": "^8.16.3",
     "smol-toml": "^1.9.1",
