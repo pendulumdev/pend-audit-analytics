@@ -6,18 +6,20 @@ import type { AuditRun } from "../../src/types.js";
 
 function fakeSql() {
   const texts: string[] = [];
+  const values: unknown[][] = [];
   const sql: CrawlSql = {
-    async query(text) {
+    async query(text, params) {
       texts.push(text);
+      values.push(params ?? []);
       return { rows: [], rowCount: 0 };
     },
   };
-  return { sql, texts };
+  return { sql, texts, values };
 }
 
 describe("insertAnalyticsRows", () => {
   it("replaces the run and does not write a section payload", async () => {
-    const { sql, texts } = fakeSql();
+    const { sql, texts, values } = fakeSql();
     const run = {
       version: 1,
       tool: "@pendulumdev/analytics",
@@ -78,5 +80,17 @@ describe("insertAnalyticsRows", () => {
     assert.match(texts.join("\n"), /INSERT INTO analytics_gsc_queries/);
     assert.equal(texts.some((text) => text.includes("audit_run_sections")), false);
     assert.match(texts.at(-1) ?? "", /COMMIT/);
+    const header = values[texts.findIndex((text) => text.includes("INSERT INTO analytics_runs"))];
+    assert.equal(header?.[29], 1);
+    const landing = values[texts.findIndex((text) => text.includes("INSERT INTO analytics_ga4_landing_pages"))];
+    assert.ok(Array.isArray(landing));
+    assert.equal(
+      landing.some((column) => Array.isArray(column) && column.includes(10)),
+      true,
+    );
+    assert.equal(
+      landing.some((column) => Array.isArray(column) && column.includes(8)),
+      true,
+    );
   });
 });
