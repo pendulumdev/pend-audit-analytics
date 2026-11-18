@@ -12,7 +12,7 @@ import type {
 import { USER_AGENT } from "../version.js";
 
 const PSI_URL = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed";
-const FETCH_TIMEOUT_MS = 45_000;
+const FETCH_TIMEOUT_MS = 180_000;
 /** Default lab set: homepage only, both form factors (2 API calls). */
 export const PSI_STRATEGIES: readonly PsiStrategy[] = ["mobile", "desktop"];
 const PSI_MAX_OPPORTUNITIES = 3;

@@ -1,6 +1,6 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { GoogleAuth } from "google-auth-library";
+import { GoogleAuth, JWT } from "google-auth-library";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/webmasters.readonly",
@@ -23,12 +23,7 @@ export interface GoogleAccessToken {
 export async function getGoogleAccessToken(
   credentialsPath?: string,
 ): Promise<GoogleAccessToken> {
-  const keyFile = resolveCredentialsPath(credentialsPath);
-  const auth = new GoogleAuth({
-    scopes: SCOPES,
-    ...(keyFile ? { keyFile } : {}),
-  });
-  const client = await auth.getClient();
+  const client = await authClient(credentialsPath);
   const tokenResponse = await client.getAccessToken();
   const token = typeof tokenResponse === "string" ? tokenResponse : tokenResponse?.token;
   if (!token) {
@@ -37,6 +32,25 @@ export async function getGoogleAccessToken(
     );
   }
   return { token };
+}
+
+async function authClient(credentialsPath?: string) {
+  const keyFile = resolveCredentialsPath(credentialsPath);
+  if (!keyFile) return new GoogleAuth({ scopes: SCOPES }).getClient();
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(keyFile, "utf8"));
+  } catch {
+    throw new Error("analytics credentials file is not valid JSON");
+  }
+  const record =
+    parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {};
+  const email = record.client_email;
+  const key = record.private_key;
+  if (typeof email !== "string" || typeof key !== "string" || !email || !key) {
+    throw new Error("analytics credentials file is missing client_email or private_key");
+  }
+  return new JWT({ email, key, scopes: SCOPES });
 }
 
 function resolveCredentialsPath(credentialsPath?: string): string | undefined {

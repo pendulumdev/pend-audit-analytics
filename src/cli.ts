@@ -5,6 +5,7 @@ import { DEFAULT_ANALYTICS_CONFIG, loadConfig } from "./config.js";
 import { formatInitSummary, runInit } from "./init.js";
 import { parseMcpArgs, startMcp } from "./mcp/server.js";
 import { releaseStdin } from "./prompt.js";
+import { chooseAnalyticsOutput } from "./report/output-mode.js";
 import { DEFAULT_ANALYTICS_OUT, writeReports } from "./report/write.js";
 import { storeAnalyticsRun } from "./store/persist.js";
 import { VERSION } from "./version.js";
@@ -48,10 +49,12 @@ program
   .action(async (opts: { config: string; out: string }) => {
     try {
       const config = loadConfig(opts.config);
+      const mode = chooseAnalyticsOutput(
+        { databaseUrl: process.env.AUDIT_DATABASE_URL },
+        process.argv,
+      );
       console.error(`analytics pull ${config.project}...`);
       const run = await runAnalyticsPull(config, { outPath: opts.out });
-      const stored = await storeAnalyticsRun(process.argv, run);
-      const written = stored ? null : writeReports(run, opts.out);
       const errCount = run.analytics.errors?.length ?? 0;
       const sources = [
         run.analytics.gsc ? "gsc" : null,
@@ -61,7 +64,13 @@ program
         `analytics ${sources.length ? sources.join("+") : "none"}` +
           (errCount ? ` · ${errCount} provider error(s)` : ""),
       );
-      console.error(written ? `wrote ${written.runJson}` : "stored analytics run");
+      if (mode === "database") {
+        await storeAnalyticsRun(process.argv, run);
+        console.error("stored analytics run");
+      } else {
+        const written = writeReports(run, opts.out);
+        console.error(`wrote ${written.runJson}`);
+      }
       // Soft-fail: auth/API errors stay in run.analytics.errors[]; exit 0.
     } catch (err) {
       fail(err);

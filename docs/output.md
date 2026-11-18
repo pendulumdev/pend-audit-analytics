@@ -70,7 +70,7 @@ The payload is `run.analytics`. Provider failures stay in `errors[]` and the pro
 <tr><td><code>reason</code></td><td><code>"not-found"</code></td><td>Present when vitals are missing. <code>not-found</code> (no field record), <code>empty</code> (record with no p75s), or <code>error</code>.</td></tr>
 <tr><td><code>detail</code></td><td><code>"chrome ux report data not found"</code></td><td>Google or transport message for <code>not-found</code> and <code>error</code>.</td></tr>
 <tr><td><code>analytics.psi</code></td><td></td><td>Homepage lab rows (mobile and desktop), when a PageSpeed key is set.</td></tr>
-<tr><td><code>analytics.rivals</code></td><td></td><td>Named rival origins: homepage CrUX and PageSpeed lab, when a PageSpeed key is set.</td></tr>
+<tr><td><code>analytics.rivals</code></td><td></td><td>Named rival origins: origin CrUX, and homepage PageSpeed unless <code>rivalPsi</code> is false, when a PageSpeed key is set.</td></tr>
 <tr><td><code>analytics.insights</code></td><td></td><td>Period signals. Omitted rows mean the threshold was not met. See the table below.</td></tr>
 <tr><td><code>id</code></td><td><code>"gsc-clicks-drop-action"</code></td><td>Stable insight id.</td></tr>
 <tr><td><code>response</code></td><td><code>"action"</code></td><td><code>watch</code> (monitor the next window) or <code>action</code> (take steps now). Not a score or how bad the number is.</td></tr>

@@ -38,7 +38,7 @@ describe("examples/analytics.toml", () => {
     assert.equal(config.analytics.pagespeedApiKey, undefined);
     assert.equal(config.analytics.rangeDays, 28);
     assert.equal(config.analytics.comparePrevious, true);
-    assert.equal(config.analytics.observeEvents, false);
+    assert.equal(config.analytics.observeEvents, undefined);
     assert.equal(config.analytics.startDate, undefined);
     assert.equal(config.analytics.endDate, undefined);
     assert.equal(config.analytics.rivals, undefined);

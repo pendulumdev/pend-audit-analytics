@@ -4,7 +4,7 @@ import { USER_AGENT } from "../version.js";
 const COLLECT_PATHS = ["/g/collect", "/collect", "/j/collect"];
 const GOTO_TIMEOUT_MS = 12_000;
 const SETTLE_MS = 2_000;
-const MAX_OBSERVE_URLS = 6;
+export const MAX_OBSERVE_URLS = 6;
 
 const SKIP_DATALAYER_EVENTS = new Set([
   "js",
@@ -122,8 +122,13 @@ export function tallyObserved(names: string[]): Array<{ name: string; count: num
   return [...map.entries()].map(([name, count]) => ({ name, count }));
 }
 
-/** Opt-in Chromium observe probe. Off unless toml or env says so. */
+/**
+ * Opt-in Chromium observe probe.
+ * Explicit false stays off. An omitted key still honors ANALYTICS_OBSERVE
+ * and SEO_ANALYTICS_OBSERVE.
+ */
 export function shouldObserveEvents(config: { observeEvents?: boolean }): boolean {
+  if (config.observeEvents === false) return false;
   if (config.observeEvents === true) return true;
   const primary = process.env.ANALYTICS_OBSERVE?.trim().toLowerCase();
   if (primary === "1" || primary === "true" || primary === "yes") return true;

@@ -19,6 +19,7 @@ interface Ga4Row {
 
 interface Ga4ReportResponse {
   rows?: Ga4Row[];
+  rowCount?: number;
 }
 
 interface Ga4DimensionFilter {
@@ -31,8 +32,21 @@ interface Ga4DimensionFilter {
   };
 }
 
-const TOP_LIMIT = 25;
 const CHANNEL_LIMIT = 8;
+export const LANDING_PAGE_SIZE = 1000;
+export const LANDING_CAP = 10_000;
+const LANDING_METRICS = [
+  "sessions",
+  "activeUsers",
+  "newUsers",
+  "engagedSessions",
+  "engagementRate",
+  "userEngagementDuration",
+  "averageSessionDuration",
+  "screenPageViews",
+  "keyEvents",
+  "sessionKeyEventRate",
+] as const;
 
 export async function fetchGa4Bundle(opts: {
   token: string;
@@ -40,72 +54,74 @@ export async function fetchGa4Bundle(opts: {
   range: AnalyticsRange;
 }): Promise<Ga4AnalyticsBundle> {
   const { token, propertyId, range } = opts;
-  const [daily, landing, previousDaily, organic, channels, devices, newReturning] =
-    await Promise.all([
-      runReport(token, propertyId, {
-        startDate: range.start,
-        endDate: range.end,
-        dimensions: ["date"],
-        metrics: ["sessions", "totalUsers", "engagedSessions"],
-        limit: 500,
-        orderBys: [{ dimension: { dimensionName: "date" } }],
-      }),
-      runReport(token, propertyId, {
-        startDate: range.start,
-        endDate: range.end,
-        dimensions: ["landingPagePlusQueryString"],
-        metrics: ["sessions", "engagementRate"],
-        limit: TOP_LIMIT,
-        orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
-      }),
-      range.previousStart && range.previousEnd
-        ? runReport(token, propertyId, {
-            startDate: range.previousStart,
-            endDate: range.previousEnd,
-            dimensions: ["date"],
-            metrics: ["sessions", "totalUsers", "engagedSessions"],
-            limit: 500,
-          })
-        : Promise.resolve([] as Ga4Row[]),
-      runReport(token, propertyId, {
-        startDate: range.start,
-        endDate: range.end,
-        dimensions: ["date"],
-        metrics: ["sessions"],
-        limit: 500,
-        orderBys: [{ dimension: { dimensionName: "date" } }],
-        dimensionFilter: {
-          filter: {
-            fieldName: "sessionDefaultChannelGroup",
-            stringFilter: { matchType: "EXACT", value: "Organic Search" },
-          },
+  const [
+    daily,
+    landing,
+    previousDaily,
+    organic,
+    channels,
+    devices,
+    newReturning,
+    previousAudience,
+  ] = await Promise.all([
+    runReport(token, propertyId, {
+      startDate: range.start,
+      endDate: range.end,
+      dimensions: ["date"],
+      metrics: ["sessions", "totalUsers", "engagedSessions"],
+      limit: 500,
+      orderBys: [{ dimension: { dimensionName: "date" } }],
+    }),
+    fetchLandingPages(token, propertyId, range),
+    range.previousStart && range.previousEnd
+      ? runReport(token, propertyId, {
+          startDate: range.previousStart,
+          endDate: range.previousEnd,
+          dimensions: ["date"],
+          metrics: ["sessions", "totalUsers", "engagedSessions"],
+          limit: 500,
+        })
+      : Promise.resolve([] as Ga4Row[]),
+    runReport(token, propertyId, {
+      startDate: range.start,
+      endDate: range.end,
+      dimensions: ["date"],
+      metrics: ["sessions"],
+      limit: 500,
+      orderBys: [{ dimension: { dimensionName: "date" } }],
+      dimensionFilter: {
+        filter: {
+          fieldName: "sessionDefaultChannelGroup",
+          stringFilter: { matchType: "EXACT", value: "Organic Search" },
         },
-      }),
-      runReport(token, propertyId, {
-        startDate: range.start,
-        endDate: range.end,
-        dimensions: ["sessionDefaultChannelGroup"],
-        metrics: ["sessions"],
-        limit: CHANNEL_LIMIT,
-        orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
-      }),
-      runReport(token, propertyId, {
-        startDate: range.start,
-        endDate: range.end,
-        dimensions: ["deviceCategory"],
-        metrics: ["sessions"],
-        limit: 10,
-        orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
-      }),
-      runReport(token, propertyId, {
-        startDate: range.start,
-        endDate: range.end,
-        dimensions: ["date", "newVsReturning"],
-        metrics: ["totalUsers"],
-        limit: 1000,
-        orderBys: [{ dimension: { dimensionName: "date" } }],
-      }),
-    ]);
+      },
+    }),
+    runReport(token, propertyId, {
+      startDate: range.start,
+      endDate: range.end,
+      dimensions: ["sessionDefaultChannelGroup"],
+      metrics: ["sessions"],
+      limit: CHANNEL_LIMIT,
+      orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+    }),
+    runReport(token, propertyId, {
+      startDate: range.start,
+      endDate: range.end,
+      dimensions: ["deviceCategory"],
+      metrics: ["sessions"],
+      limit: 10,
+      orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+    }),
+    runReport(token, propertyId, {
+      startDate: range.start,
+      endDate: range.end,
+      dimensions: ["date", "newVsReturning"],
+      metrics: ["totalUsers"],
+      limit: 10_000,
+      orderBys: [{ dimension: { dimensionName: "date" } }],
+    }),
+    fetchPreviousAudience(token, propertyId, range),
+  ]);
 
   const dailyRows: Ga4DailyRow[] = daily.map((r) => ({
     date: formatGa4Date(r.dimensionValues?.[0]?.value ?? ""),
@@ -114,11 +130,7 @@ export async function fetchGa4Bundle(opts: {
     engagedSessions: metricNum(r, 2),
   }));
 
-  const landingPages: Ga4LandingPageRow[] = landing.map((r) => ({
-    path: r.dimensionValues?.[0]?.value || "(not set)",
-    sessions: metricNum(r, 0),
-    engagementRate: metricNum(r, 1),
-  }));
+  const landingPages = landing.rows;
 
   const organicDaily: Ga4OrganicDailyRow[] = organic
     .map((r) => ({
@@ -162,11 +174,105 @@ export async function fetchGa4Bundle(opts: {
     devices: deviceRows,
     newReturningDaily,
     totals,
+    landingSourceRows: landing.sourceRows,
     ...(previousTotals !== undefined && { previousTotals }),
+    ...(previousAudience !== undefined && previousAudience),
   };
 }
 
-const EVENT_LIMIT = 50;
+export async function collectPagedRows<T>(opts: {
+  pageSize: number;
+  cap: number;
+  fetchPage: (offset: number, limit: number) => Promise<{ rows: T[]; rowCount?: number }>;
+}): Promise<{ rows: T[]; sourceRows: number }> {
+  const rows: T[] = [];
+  let offset = 0;
+  let sourceRows = 0;
+  let counted = false;
+  while (rows.length < opts.cap) {
+    const page = await opts.fetchPage(offset, opts.pageSize);
+    if (!counted) {
+      sourceRows = page.rowCount ?? page.rows.length;
+      counted = true;
+    }
+    if (page.rows.length === 0) break;
+    for (const row of page.rows) {
+      if (rows.length >= opts.cap) break;
+      rows.push(row);
+    }
+    if (page.rows.length < opts.pageSize) break;
+    offset += opts.pageSize;
+  }
+  return { rows, sourceRows };
+}
+
+async function fetchLandingPages(
+  token: string,
+  propertyId: string,
+  range: AnalyticsRange,
+): Promise<{ rows: Ga4LandingPageRow[]; sourceRows: number }> {
+  return collectPagedRows({
+    pageSize: LANDING_PAGE_SIZE,
+    cap: LANDING_CAP,
+    fetchPage: async (offset, limit) => {
+      const page = await runReportPage(token, propertyId, {
+        startDate: range.start,
+        endDate: range.end,
+        dimensions: ["landingPagePlusQueryString"],
+        metrics: [...LANDING_METRICS],
+        limit,
+        offset,
+        orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+      });
+      return {
+        rows: page.rows.map(landingRow),
+        rowCount: page.rowCount,
+      };
+    },
+  });
+}
+
+async function fetchPreviousAudience(
+  token: string,
+  propertyId: string,
+  range: AnalyticsRange,
+): Promise<{ previousNewUsers: number; previousReturningUsers: number } | undefined> {
+  if (!range.previousStart || !range.previousEnd) return undefined;
+  const rows = await runReport(token, propertyId, {
+    startDate: range.previousStart,
+    endDate: range.previousEnd,
+    dimensions: ["newVsReturning"],
+    metrics: ["totalUsers"],
+    limit: 10,
+  });
+  let previousNewUsers = 0;
+  let previousReturningUsers = 0;
+  for (const row of rows) {
+    const kind = (row.dimensionValues?.[0]?.value ?? "").toLowerCase();
+    const users = metricNum(row, 0);
+    if (kind === "new") previousNewUsers += users;
+    else if (kind === "returning") previousReturningUsers += users;
+  }
+  return { previousNewUsers, previousReturningUsers };
+}
+
+function landingRow(row: Ga4Row): Ga4LandingPageRow {
+  return {
+    path: row.dimensionValues?.[0]?.value || "(not set)",
+    sessions: metricNum(row, 0),
+    activeUsers: metricNum(row, 1),
+    newUsers: metricNum(row, 2),
+    engagedSessions: metricNum(row, 3),
+    engagementRate: metricNum(row, 4),
+    userEngagementDuration: metricNum(row, 5),
+    averageSessionDuration: metricNum(row, 6),
+    screenPageViews: metricNum(row, 7),
+    keyEvents: metricNum(row, 8),
+    sessionKeyEventRate: metricNum(row, 9),
+  };
+}
+
+export const EVENT_LIMIT = 10_000;
 
 /** eventName + eventCount for the Analytics event-gap table. */
 export async function fetchGa4EventCounts(opts: {
@@ -199,6 +305,7 @@ async function runReport(
     dimensions: string[];
     metrics: string[];
     limit: number;
+    offset?: number;
     orderBys?: Array<
       | { dimension: { dimensionName: string }; desc?: boolean }
       | { metric: { metricName: string }; desc?: boolean }
@@ -218,6 +325,7 @@ async function runReport(
       dimensions: opts.dimensions.map((name) => ({ name })),
       metrics: opts.metrics.map((name) => ({ name })),
       limit: opts.limit,
+      offset: opts.offset,
       orderBys: opts.orderBys,
       dimensionFilter: opts.dimensionFilter,
     }),
@@ -228,6 +336,47 @@ async function runReport(
   }
   const json = (await res.json()) as Ga4ReportResponse;
   return json.rows ?? [];
+}
+
+async function runReportPage(
+  token: string,
+  propertyId: string,
+  opts: {
+    startDate: string;
+    endDate: string;
+    dimensions: string[];
+    metrics: string[];
+    limit: number;
+    offset?: number;
+    orderBys?: Array<
+      | { dimension: { dimensionName: string }; desc?: boolean }
+      | { metric: { metricName: string }; desc?: boolean }
+    >;
+  },
+): Promise<{ rows: Ga4Row[]; rowCount: number }> {
+  const url = `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      dateRanges: [{ startDate: opts.startDate, endDate: opts.endDate }],
+      dimensions: opts.dimensions.map((name) => ({ name })),
+      metrics: opts.metrics.map((name) => ({ name })),
+      limit: opts.limit,
+      offset: opts.offset,
+      orderBys: opts.orderBys,
+    }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(formatGa4Error(res.status, text, propertyId));
+  }
+  const json = (await res.json()) as Ga4ReportResponse;
+  const rows = json.rows ?? [];
+  return { rows, rowCount: json.rowCount ?? rows.length };
 }
 
 function pivotNewReturning(rows: Ga4Row[]): Ga4NewReturningDailyRow[] {

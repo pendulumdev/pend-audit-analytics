@@ -160,7 +160,7 @@ With a key and a `baseUrl`, the pull also writes:
 Final Lighthouse screenshots write to `dirname(--out)/psi-shots/` as paths,
 not base64. Without the key those sections are simply omitted (rival rows stay
 as `{ host }` only). A CrUX 404 writes `reason: "not-found"` and is not a
-failed run. Each rival adds two sequential lab calls (up to 45s each), so a
+failed run. Each rival adds two sequential lab calls (up to 180s each), so a
 long rival list can make the pull much slower.
 
 The key is stripped from any error text before it reaches `run.json`, so a
@@ -170,8 +170,9 @@ not aborted the way `observeEvents` aborts collect beacons.
 ## Observe (optional)
 
 Off by default. Set `observeEvents = true` in the project config, or
-`ANALYTICS_OBSERVE=1`. `SEO_ANALYTICS_OBSERVE` is still accepted for
-compatibility. The probe launches Chromium, intercepts GA collect on a cold
+`ANALYTICS_OBSERVE=1` when the key is omitted. An explicit
+`observeEvents = false` stays off. `SEO_ANALYTICS_OBSERVE` is still accepted
+for compatibility when the key is omitted. The probe launches Chromium, intercepts GA collect on a cold
 load, then aborts so client GA4 is not inflated. Playwright is not a required
 dependency - install it yourself if you want this probe.
 

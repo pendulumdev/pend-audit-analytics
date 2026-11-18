@@ -37,7 +37,7 @@ propertyId = "properties/123456789"
     assert.equal(cfg.analytics.enabled, true);
     assert.equal(cfg.analytics.searchConsole?.siteUrl, "sc-domain:example.com");
     assert.equal(cfg.analytics.ga4?.propertyId, "123456789");
-    assert.equal(cfg.analytics.observeEvents, false);
+    assert.equal(cfg.analytics.observeEvents, undefined);
     assert.equal(cfg.analytics.rangeDays, 28);
   });
 

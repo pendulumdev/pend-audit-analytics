@@ -27,11 +27,21 @@ export interface AnalyticsConfig {
   ga4?: AnalyticsGa4Config;
   /**
    * Optional Chromium probe: intercept GA collect on a cold load, then abort
-   * so client GA4 is not inflated. Off unless set, or ANALYTICS_OBSERVE=1.
+   * so client GA4 is not inflated. Explicit false stays off. An omitted key
+   * still honors ANALYTICS_OBSERVE=1.
    */
   observeEvents?: boolean;
-  /** Named rival https origins. Homepage CrUX + PSI. Never your Google property. */
+  /**
+   * Named rival https origins. Origin CrUX. Homepage PSI unless rivalPsi
+   * is false. Never your Google property.
+   */
   rivals?: string[];
+  /** False skips rival PageSpeed. Omitted keeps the CLI homepage PSI pull. */
+  rivalPsi?: boolean;
+  /** When set, tag fetch uses these URLs instead of landing-page selection. */
+  tagUrls?: string[];
+  /** When set, site PageSpeed uses these URLs instead of the homepage only. */
+  psiUrls?: string[];
 }
 
 export const ANALYTICS_STANDARD = "Pendulum_Analytics_v1" as const;
@@ -90,6 +100,14 @@ export interface Ga4LandingPageRow {
   path: string;
   sessions: number;
   engagementRate: number;
+  activeUsers?: number;
+  newUsers?: number;
+  engagedSessions?: number;
+  userEngagementDuration?: number;
+  averageSessionDuration?: number;
+  screenPageViews?: number;
+  keyEvents?: number;
+  sessionKeyEventRate?: number;
 }
 
 export interface Ga4NamedCount {
@@ -122,6 +140,11 @@ export interface Ga4AnalyticsBundle {
   newReturningDaily: Ga4NewReturningDailyRow[];
   totals: { sessions: number; totalUsers: number; engagedSessions: number };
   previousTotals?: { sessions: number; totalUsers: number; engagedSessions: number };
+  /** GA4 rowCount from the first landing page, before the 10,000 cap. */
+  landingSourceRows?: number;
+  /** Sums for the previous window. Daily rows for that window are not stored. */
+  previousNewUsers?: number;
+  previousReturningUsers?: number;
 }
 
 export interface RemediationCopy {

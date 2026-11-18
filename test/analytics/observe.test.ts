@@ -111,6 +111,7 @@ describe("shouldObserveEvents", () => {
       assert.equal(shouldObserveEvents({ observeEvents: false }), false);
       assert.equal(shouldObserveEvents({ observeEvents: true }), true);
       process.env.ANALYTICS_OBSERVE = "1";
+      assert.equal(shouldObserveEvents({ observeEvents: false }), false);
       assert.equal(shouldObserveEvents({}), true);
       delete process.env.ANALYTICS_OBSERVE;
       process.env.SEO_ANALYTICS_OBSERVE = "1";

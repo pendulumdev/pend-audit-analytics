@@ -169,7 +169,14 @@ function parseAnalytics(raw: Record<string, unknown>, source: string): Analytics
     raw.comparePrevious ?? true,
     "analytics.comparePrevious",
   );
-  const observeEvents = asBool(raw.observeEvents ?? false, "analytics.observeEvents");
+  const observeEvents =
+    raw.observeEvents == null
+      ? undefined
+      : asBool(raw.observeEvents, "analytics.observeEvents");
+  const rivalPsi =
+    raw.rivalPsi == null ? undefined : asBool(raw.rivalPsi, "analytics.rivalPsi");
+  const tagUrls = optionalStringList(raw.tagUrls, "analytics.tagUrls");
+  const psiUrls = optionalStringList(raw.psiUrls, "analytics.psiUrls");
 
   let searchConsole: AnalyticsConfig["searchConsole"];
   if (raw.searchConsole != null) {
@@ -214,7 +221,10 @@ function parseAnalytics(raw: Record<string, unknown>, source: string): Analytics
     enabled,
     rangeDays,
     comparePrevious,
-    observeEvents,
+    ...(observeEvents !== undefined && { observeEvents }),
+    ...(rivalPsi !== undefined && { rivalPsi }),
+    ...(tagUrls !== undefined && { tagUrls }),
+    ...(psiUrls !== undefined && { psiUrls }),
     ...(credentialsPath !== undefined && { credentialsPath }),
     ...(pagespeedApiKey !== undefined && { pagespeedApiKey }),
     ...(startDate !== undefined && { startDate }),
@@ -256,6 +266,15 @@ function optionalString(v: unknown): string | undefined {
   if (typeof v !== "string") throw new Error("expected string");
   const t = v.trim();
   return t === "" ? undefined : t;
+}
+
+function optionalStringList(v: unknown, field: string): string[] | undefined {
+  if (v == null) return undefined;
+  if (!Array.isArray(v) || v.some((row) => typeof row !== "string")) {
+    throw new Error(`${field} must be an array of strings`);
+  }
+  const rows = [...new Set(v.map((row) => row.trim()).filter(Boolean))];
+  return rows.length ? rows : undefined;
 }
 
 function asPositiveInt(v: unknown, field: string): number {

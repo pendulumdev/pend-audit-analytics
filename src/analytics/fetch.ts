@@ -65,8 +65,18 @@ export async function fetchAnalyticsBundle(
     const message = err instanceof Error ? err.message : String(err);
     const observed = await maybeObserve(config, pageUrl ? [pageUrl] : [], errors);
     const crux = await maybeCrux(opts.baseUrl, config.pagespeedApiKey, errors);
-    const psi = await maybePsi(pageUrl, config.pagespeedApiKey, errors, opts.outDir);
-    const rivals = await maybeRivals(config.rivals, config.pagespeedApiKey, errors);
+    const psi = await maybePsi(
+      psiTargets(config, pageUrl),
+      config.pagespeedApiKey,
+      errors,
+      opts.outDir,
+    );
+    const rivals = await maybeRivals(
+      config.rivals,
+      config.pagespeedApiKey,
+      errors,
+      config.rivalPsi !== false,
+    );
     const events = eventsOrUndefined(configured, [], observed);
     return {
       range,
@@ -114,7 +124,13 @@ export async function fetchAnalyticsBundle(
   }
 
   let extraUrls: string[] = [];
-  if (pageUrl) {
+  if (config.tagUrls?.length) {
+    const home = pageUrl.replace(/\/$/, "");
+    extraUrls = config.tagUrls
+      .map((url) => url.trim())
+      .filter((url) => url.replace(/\/$/, "") !== home)
+      .slice(0, 5);
+  } else if (pageUrl) {
     extraUrls = selectLandingUrls({
       homeUrl: pageUrl,
       ...(gsc !== undefined && { gscPages: gsc.topPages }),
@@ -161,8 +177,18 @@ export async function fetchAnalyticsBundle(
   const observeUrls = pageUrl ? [pageUrl, ...extraUrls] : [];
   const observed = await maybeObserve(config, observeUrls, errors);
   const crux = await maybeCrux(opts.baseUrl, config.pagespeedApiKey, errors);
-  const psi = await maybePsi(pageUrl, config.pagespeedApiKey, errors, opts.outDir);
-  const rivals = await maybeRivals(config.rivals, config.pagespeedApiKey, errors);
+  const psi = await maybePsi(
+    psiTargets(config, pageUrl),
+    config.pagespeedApiKey,
+    errors,
+    opts.outDir,
+  );
+  const rivals = await maybeRivals(
+    config.rivals,
+    config.pagespeedApiKey,
+    errors,
+    config.rivalPsi !== false,
+  );
 
   const events = eventsOrUndefined(configured, received, observed);
   return withInsights({
@@ -182,10 +208,12 @@ async function maybeRivals(
   hosts: readonly string[] | undefined,
   pagespeedKey: string | undefined,
   errors: AnalyticsError[],
+  pageSpeed: boolean,
 ): Promise<AnalyticsBundle["rivals"] | undefined> {
   if (!hosts?.length) return undefined;
   const rivals = await observeNamedRivals({
     hosts,
+    pageSpeed,
     ...(pagespeedKey !== undefined && { apiKey: pagespeedKey }),
   });
   for (const row of rivals) {
@@ -222,14 +250,19 @@ async function maybeObserve(
   }
 }
 
+function psiTargets(config: AnalyticsConfig, pageUrl: string): string[] {
+  if (config.psiUrls?.length) return [...config.psiUrls];
+  return pageUrl ? [pageUrl] : [];
+}
+
 async function maybePsi(
-  homeUrl: string,
+  urls: readonly string[],
   pagespeedKey: string | undefined,
   errors: AnalyticsError[],
   outDir?: string,
 ): Promise<AnalyticsBundle["psi"] | undefined> {
   const apiKey = pagespeedApiKey(pagespeedKey);
-  const jobs = selectPsiJobs(homeUrl);
+  const jobs = urls.flatMap((url) => selectPsiJobs(url));
   if (!apiKey || !jobs.length) return undefined;
   try {
     const psi = await fetchPsiPages({
@@ -241,7 +274,7 @@ async function maybePsi(
     return psi;
   } catch (err) {
     errors.push(
-      softError("psi", err instanceof Error ? err.message : String(err), homeUrl),
+      softError("psi", err instanceof Error ? err.message : String(err), urls[0] ?? ""),
     );
     return undefined;
   }

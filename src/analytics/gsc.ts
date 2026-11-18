@@ -3,8 +3,6 @@ import type {
   GscAnalyticsBundle,
   GscDailyRow,
   GscMetricRow,
-  GscPageRow,
-  GscQueryRow,
 } from "../types.js";
 
 interface GscApiRow {
@@ -19,7 +17,8 @@ interface GscQueryResponse {
   rows?: GscApiRow[];
 }
 
-const TOP_LIMIT = 100;
+export const GSC_TOP_LIMIT = 10_000;
+const GSC_PAGE_SIZE = 1000;
 
 export async function fetchGscBundle(opts: {
   token: string;
@@ -27,24 +26,12 @@ export async function fetchGscBundle(opts: {
   range: AnalyticsRange;
 }): Promise<GscAnalyticsBundle> {
   const { token, siteUrl, range } = opts;
-  const [daily, topPages, topQueries, currentTotals, previousTotals] = await Promise.all([
+  const [daily, currentTotals, previousTotals] = await Promise.all([
     queryGsc(token, siteUrl, {
       startDate: range.start,
       endDate: range.end,
       dimensions: ["date"],
       rowLimit: 500,
-    }),
-    queryGsc(token, siteUrl, {
-      startDate: range.start,
-      endDate: range.end,
-      dimensions: ["page"],
-      rowLimit: TOP_LIMIT,
-    }),
-    queryGsc(token, siteUrl, {
-      startDate: range.start,
-      endDate: range.end,
-      dimensions: ["query"],
-      rowLimit: TOP_LIMIT,
     }),
     queryGsc(token, siteUrl, {
       startDate: range.start,
@@ -59,6 +46,14 @@ export async function fetchGscBundle(opts: {
         })
       : Promise.resolve([] as GscApiRow[]),
   ]);
+  const queries = await collectGscRows(token, siteUrl, range, "query", (row) => ({
+    query: row.keys?.[0] ?? "",
+    ...metricsFromRow(row),
+  }));
+  const pages = await collectGscRows(token, siteUrl, range, "page", (row) => ({
+    page: row.keys?.[0] ?? "",
+    ...metricsFromRow(row),
+  }));
 
   const dailyRows: GscDailyRow[] = daily
     .map((r) => ({
@@ -67,16 +62,6 @@ export async function fetchGscBundle(opts: {
     }))
     .filter((r) => r.date)
     .sort((a, b) => a.date.localeCompare(b.date));
-
-  const pages: GscPageRow[] = topPages.map((r) => ({
-    page: r.keys?.[0] ?? "",
-    ...metricsFromRow(r),
-  }));
-
-  const queries: GscQueryRow[] = topQueries.map((r) => ({
-    query: r.keys?.[0] ?? "",
-    ...metricsFromRow(r),
-  }));
 
   return {
     siteUrl,
@@ -89,6 +74,37 @@ export async function fetchGscBundle(opts: {
   };
 }
 
+async function collectGscRows<T>(
+  token: string,
+  siteUrl: string,
+  range: AnalyticsRange,
+  dimension: "query" | "page",
+  mapRow: (row: GscApiRow) => T,
+): Promise<T[]> {
+  const out: T[] = [];
+  let startRow = 0;
+  while (out.length < GSC_TOP_LIMIT) {
+    const limit = Math.min(GSC_PAGE_SIZE, GSC_TOP_LIMIT - out.length);
+    const page = await queryGsc(token, siteUrl, {
+      startDate: range.start,
+      endDate: range.end,
+      dimensions: [dimension],
+      rowLimit: limit,
+      startRow,
+    });
+    if (page.length === 0) break;
+    const take = Math.min(page.length, GSC_TOP_LIMIT - out.length);
+    for (let i = 0; i < take; i += 1) {
+      const row = page[i];
+      if (!row) continue;
+      out.push(mapRow(row));
+    }
+    if (page.length < limit) break;
+    startRow += take;
+  }
+  return out;
+}
+
 async function queryGsc(
   token: string,
   siteUrl: string,
@@ -97,6 +113,7 @@ async function queryGsc(
     endDate: string;
     dimensions?: string[];
     rowLimit?: number;
+    startRow?: number;
   },
 ): Promise<GscApiRow[]> {
   const encoded = encodeURIComponent(siteUrl);
@@ -111,7 +128,8 @@ async function queryGsc(
       startDate: body.startDate,
       endDate: body.endDate,
       dimensions: body.dimensions,
-      rowLimit: body.rowLimit ?? 1000,
+      rowLimit: body.rowLimit ?? GSC_PAGE_SIZE,
+      startRow: body.startRow ?? 0,
       dataState: "final",
     }),
   });

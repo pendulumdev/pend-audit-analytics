@@ -14,7 +14,7 @@ import { USER_AGENT } from "../version.js";
 const FETCH_TIMEOUT_MS = 12_000;
 const MAX_BODY_BYTES = 1_500_000;
 const SNIPPET_MAX_LINES = 20;
-const SNIPPET_MAX_CHARS = 1_200;
+export const SNIPPET_MAX_CHARS = 1_200;
 
 const SCRIPT_RE = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
 const SRC_RE = /\bsrc\s*=\s*["']([^"']+)["']/i;

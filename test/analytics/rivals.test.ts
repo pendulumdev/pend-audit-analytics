@@ -25,6 +25,41 @@ describe("observeNamedRivals", () => {
     }
   });
 
+  it("skips PageSpeed when pageSpeed is false and still reads CrUX", async () => {
+    const realFetch = globalThis.fetch;
+    const seen: string[] = [];
+    try {
+      globalThis.fetch = (async (input: string | URL | Request) => {
+        const url = String(input instanceof Request ? input.url : input);
+        seen.push(url);
+        if (url.includes("chromeuxreport.googleapis.com")) {
+          return new Response(
+            JSON.stringify({
+              record: {
+                key: { origin: "https://rival.test" },
+                metrics: {
+                  largest_contentful_paint: { percentiles: { p75: 2100 } },
+                },
+              },
+            }),
+            { status: 200, headers: { "content-type": "application/json" } },
+          );
+        }
+        throw new Error(`unexpected fetch: ${url}`);
+      }) as typeof globalThis.fetch;
+      const rows = await observeNamedRivals({
+        hosts: ["https://rival.test"],
+        apiKey: "test-key",
+        pageSpeed: false,
+      });
+      assert.equal(rows[0]?.crux?.lcpMs, 2100);
+      assert.equal(rows[0]?.psi, undefined);
+      assert.equal(seen.some((url) => url.includes("pagespeedonline")), false);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+
   it("pulls origin CrUX and homepage PSI, not on-page copy", async () => {
     const prev = process.env.PAGESPEED_API_KEY;
     const realFetch = globalThis.fetch;
