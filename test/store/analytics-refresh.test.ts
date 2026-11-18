@@ -23,6 +23,9 @@ import { memorySql } from "./memory-sql.js";
 
 const SITE = "https://pendulumdev.co.uk";
 const RIVAL = "https://rival.example";
+const DESKTOP_DIGEST = "a".repeat(64);
+const RIVAL_DIGEST = "b".repeat(64);
+const MOBILE_DIGEST = "c".repeat(64);
 
 const FROZEN = [
   "generated_at",
@@ -175,7 +178,7 @@ function fullAnalytics(query = "old-query"): AuditRun["analytics"] {
           url: `${SITE}/`,
           strategy: "mobile",
           score: 40,
-          screenshot: "psi-mobile.webp",
+          screenshot: MOBILE_DIGEST,
           metrics: [{ id: "lcp", value: 100, displayValue: "0.1 s" }],
           insights: [{ id: "old-mobile", title: "Old mobile", kind: "insight" }],
         },
@@ -183,7 +186,7 @@ function fullAnalytics(query = "old-query"): AuditRun["analytics"] {
           url: `${SITE}/`,
           strategy: "desktop",
           score: 50,
-          screenshot: "psi-desktop.webp",
+          screenshot: DESKTOP_DIGEST,
           metrics: [{ id: "lcp", value: 80 }],
         },
       ],
@@ -198,7 +201,7 @@ function fullAnalytics(query = "old-query"): AuditRun["analytics"] {
               url: `${RIVAL}/`,
               strategy: "mobile",
               score: 10,
-              screenshot: "rival.webp",
+              screenshot: RIVAL_DIGEST,
             },
           ],
         },
@@ -473,7 +476,7 @@ describe("analytics partial refresh", () => {
     assert.deepEqual(frozen(header(mem)), beforeHeader);
   });
 
-  it("refreshPsiPage replaces one strategy and keeps the WebP name on the other", async () => {
+  it("refreshPsiPage replaces one strategy and keeps the other digest", async () => {
     const mem = await seeded();
     const beforeHeader = frozen(header(mem));
     await refreshPsiPage(
@@ -494,9 +497,9 @@ describe("analytics partial refresh", () => {
     const rival = pages.find((row) => row.host === RIVAL);
     assert.equal(mobile?.score, 70);
     assert.equal(mobile?.screenshot, "psi-shots/psi-mobile.jpg");
-    assert.equal(desktop?.screenshot, "psi-desktop.webp");
+    assert.equal(desktop?.screenshot, DESKTOP_DIGEST);
     assert.equal(desktop?.score, 50);
-    assert.equal(rival?.screenshot, "rival.webp");
+    assert.equal(rival?.screenshot, RIVAL_DIGEST);
     assert.equal(
       runRows(mem, "analytics_psi_metrics").some(
         (row) => row.host === SITE && row.strategy === "desktop" && row.value === 80,
@@ -517,8 +520,8 @@ describe("analytics partial refresh", () => {
   it("refreshPsiPages replaces the fetched site strategies and leaves rival hosts", async () => {
     const mem = await seeded();
     await refreshPsiPages(mem.sql, "run-1", [
-      { url: `${SITE}/`, strategy: "mobile", score: 71, screenshot: "psi-mobile.webp" },
-      { url: `${SITE}/`, strategy: "desktop", score: 81, screenshot: "psi-desktop.webp" },
+      { url: `${SITE}/`, strategy: "mobile", score: 71, screenshot: "psi-shots/psi-mobile.jpg" },
+      { url: `${SITE}/`, strategy: "desktop", score: 81, screenshot: "psi-shots/psi-desktop.jpg" },
     ]);
     const pages = runRows(mem, "analytics_psi_pages");
     assert.equal(
@@ -529,7 +532,7 @@ describe("analytics partial refresh", () => {
       pages.find((row) => row.host === SITE && row.strategy === "desktop")?.score,
       81,
     );
-    assert.equal(pages.find((row) => row.host === RIVAL)?.screenshot, "rival.webp");
+    assert.equal(pages.find((row) => row.host === RIVAL)?.screenshot, RIVAL_DIGEST);
   });
 
   it("refreshNamedRivals replaces rival hosts and leaves the site", async () => {
@@ -566,7 +569,7 @@ describe("analytics partial refresh", () => {
     );
     assert.equal(
       pages.find((row) => row.host === SITE && row.strategy === "mobile")?.screenshot,
-      "psi-mobile.webp",
+      MOBILE_DIGEST,
     );
     assert.equal(pages.find((row) => row.host === nextRival)?.score, 15);
     assert.deepEqual(messages(runRows(mem, "analytics_errors"), "rival"), ["rival-new"]);

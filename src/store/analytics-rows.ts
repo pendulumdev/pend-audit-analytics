@@ -605,6 +605,7 @@ export async function insertPsi(
       page.lighthouseVersion ?? null,
       page.fetchTime ?? null,
       page.error ?? null,
+      // Sidecar path until the worker replaces it with the screenshot-pool digest.
       page.screenshot ?? null,
     ],
   );
