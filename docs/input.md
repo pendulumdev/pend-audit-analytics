@@ -80,7 +80,7 @@ Credentials, scopes, per-property access and troubleshooting are their own subje
 <tr><td><code>baseUrl</code></td><td><code>"https://example.com"</code></td><td>Site origin for the public HTML tag scan, CrUX origin, and homepage PageSpeed lab check.</td><td>Optional. Omit and those public probes are skipped.</td></tr>
 <tr><td colspan="4"><code>analytics</code></td></tr>
 <tr><td><code>enabled</code></td><td><code>true</code></td><td>Ignored by <code>audit</code> (force-enabled).</td><td>Rejected if <code>true</code> with no sources.</td></tr>
-<tr><td><code>credentialsPath</code></td><td><code>""</code></td><td>Path to a service-account JSON.</td><td>Optional. Empty or omit uses <code>GOOGLE_APPLICATION_CREDENTIALS</code>.</td></tr>
+<tr><td><code>credentialsPath</code></td><td><code>""</code></td><td>Path to a service-account JSON, or an authorized_user JSON with client id, secret, and refresh token.</td><td>Optional. Empty or omit uses <code>GOOGLE_APPLICATION_CREDENTIALS</code>.</td></tr>
 <tr><td><code>pagespeedApiKey</code></td><td><code>""</code></td><td>PageSpeed Insights and CrUX API key.</td><td>Optional. Empty or omit uses <code>PAGESPEED_API_KEY</code>. The environment wins when both are set. Do not commit the key.</td></tr>
 <tr><td><code>rangeDays</code></td><td><code>28</code></td><td>Inclusive day count for the primary window.</td><td>Default 28. Max 90.</td></tr>
 <tr><td><code>startDate</code> / <code>endDate</code></td><td><code>"2026-01-01"</code></td><td><code>YYYY-MM-DD</code> overrides.</td><td>Must be set together. When both set, <code>rangeDays</code> is ignored.</td></tr>

@@ -37,4 +37,39 @@ describe("getGoogleAccessToken", () => {
       false,
     );
   });
+
+  it("accepts an authorized_user file without the service-account fields", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "analytics-auth-user-"));
+    const file = join(dir, "oauth.json");
+    await writeFile(
+      file,
+      JSON.stringify({
+        type: "authorized_user",
+        client_id: "client",
+        client_secret: "secret",
+        refresh_token: "refresh",
+      }),
+    );
+    const warnings: string[] = [];
+    // biome-ignore lint/suspicious/noConsole: the test asserts this warning stays quiet
+    const original = console.warn;
+    console.warn = (...args: unknown[]) => {
+      warnings.push(args.map(String).join(" "));
+    };
+    let message = "";
+    try {
+      await getGoogleAccessToken(file);
+    } catch (err) {
+      message = err instanceof Error ? err.message : String(err);
+    } finally {
+      console.warn = original;
+      await rm(dir, { recursive: true, force: true });
+    }
+    assert.equal(message.includes("client_email"), false);
+    assert.equal(message.includes("missing client_id"), false);
+    assert.equal(
+      warnings.some((line) => /keyFilename|credentials option is deprecated/.test(line)),
+      false,
+    );
+  });
 });

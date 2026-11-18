@@ -46,7 +46,7 @@ Requests carry a single identifiable user agent, `pend-analytics/<version> (+htt
 
 This engine is the one that holds the service account.
 
-- A Google **service account key file** is read from `credentialsPath`, or from `GOOGLE_APPLICATION_CREDENTIALS` if that is unset. It is read, never copied, and never written to `--out`.
+- A Google **service account key file**, or an **authorized_user** JSON file (`client_id`, `client_secret`, `refresh_token`), is read from `credentialsPath`, or from `GOOGLE_APPLICATION_CREDENTIALS` if that is unset. It is read, never copied, and never written to `--out`.
 - Scopes are read-only: `webmasters.readonly` and `analytics.readonly`. The engine cannot change anything in your Search Console or GA4 property.
 - `PAGESPEED_API_KEY` (or `analytics.pagespeedApiKey` when the environment is unset) is sent as a query parameter, which is the only form the PageSpeed API accepts. The environment wins when both are set. Error strings that could carry it are redacted before they reach the analytics JSON, because a report is a file people attach to tickets. The key is never written to `--out`.
 - The service account email is not written to the report.

@@ -41,7 +41,7 @@ program
 
 program
   .command("audit")
-  .description("Pull Search Console / GA4 and write JSON to --out")
+  .description("Pull Search Console / GA4. Database mode stores rows; otherwise write JSON to --out")
   .option("-c, --config <path>", "Config path", DEFAULT_ANALYTICS_CONFIG)
   .option("-o, --out <path>", "Output file path", DEFAULT_ANALYTICS_OUT)
   .option("--run-id <id>", "Arc audit run id when AUDIT_DATABASE_URL is set")

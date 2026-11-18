@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { GoogleAuth, JWT } from "google-auth-library";
+import { GoogleAuth, JWT, OAuth2Client } from "google-auth-library";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/webmasters.readonly",
@@ -17,7 +17,8 @@ export interface GoogleAccessToken {
 }
 
 /**
- * Load a Google access token from a service-account JSON path or
+ * Load a Google access token from a service-account JSON path, an
+ * authorized_user JSON path (client id, secret, and refresh token), or
  * GOOGLE_APPLICATION_CREDENTIALS / ADC.
  */
 export async function getGoogleAccessToken(
@@ -45,6 +46,26 @@ async function authClient(credentialsPath?: string) {
   }
   const record =
     parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {};
+  if (record.type === "authorized_user") {
+    const clientId = record.client_id;
+    const clientSecret = record.client_secret;
+    const refreshToken = record.refresh_token;
+    if (
+      typeof clientId !== "string" ||
+      !clientId ||
+      typeof clientSecret !== "string" ||
+      !clientSecret ||
+      typeof refreshToken !== "string" ||
+      !refreshToken
+    ) {
+      throw new Error(
+        "analytics credentials file is missing client_id, client_secret, or refresh_token",
+      );
+    }
+    const client = new OAuth2Client(clientId, clientSecret);
+    client.setCredentials({ refresh_token: refreshToken });
+    return client;
+  }
   const email = record.client_email;
   const key = record.private_key;
   if (typeof email !== "string" || typeof key !== "string" || !email || !key) {
