@@ -3,9 +3,9 @@ import type { CrawlSql } from "../../src/store/crawl-db.js";
 type Row = Record<string, unknown> & { runId: string };
 
 const CONFLICT_KEY: Record<string, readonly string[]> = {
-  analytics_crux: ["run_id", "host"],
-  analytics_psi_pages: ["run_id", "host", "strategy"],
-  analytics_psi_metrics: ["run_id", "host", "strategy", "metric_id"],
+  engine_analytics_crux: ["run_id", "host"],
+  engine_analytics_psi_pages: ["run_id", "host", "strategy"],
+  engine_analytics_psi_metrics: ["run_id", "host", "strategy", "metric_id"],
 };
 
 function cloneTables(tables: Map<string, Row[]>): Map<string, Row[]> {
@@ -102,7 +102,7 @@ export function memorySql(): {
     const table = /DELETE FROM (\w+)/.exec(text)?.[1];
     if (!table) throw new Error(text);
     const runId = String(values[0]);
-    if (table === "analytics_runs") {
+    if (table === "engine_analytics_runs") {
       for (const [name, rows] of tables) {
         tables.set(
           name,
@@ -111,10 +111,10 @@ export function memorySql(): {
       }
       return;
     }
-    const rivalScoped = text.includes("SELECT host FROM analytics_rivals");
+    const rivalScoped = text.includes("SELECT host FROM engine_analytics_rivals");
     const rivalHosts = rivalScoped
       ? new Set(
-          tableRows("analytics_rivals")
+          tableRows("engine_analytics_rivals")
             .filter((row) => row.runId === runId)
             .map((row) => String(row.host)),
         )
@@ -176,7 +176,7 @@ export function memorySql(): {
       }
       if (statement.startsWith("SELECT COALESCE(MAX(ordinal)")) {
         const runId = String(values[0]);
-        const ordinals = tableRows("analytics_errors")
+        const ordinals = tableRows("engine_analytics_errors")
           .filter((row) => row.runId === runId)
           .map((row) => Number(row.ordinal));
         const max = ordinals.length > 0 ? Math.max(...ordinals) : -1;

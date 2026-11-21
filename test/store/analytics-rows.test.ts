@@ -75,14 +75,14 @@ describe("insertAnalyticsRows", () => {
     } as AuditRun;
     await insertAnalyticsRows(sql, "run-1", run);
     assert.match(texts[0] ?? "", /BEGIN/);
-    assert.match(texts[1] ?? "", /DELETE FROM analytics_runs/);
-    assert.match(texts.join("\n"), /INSERT INTO analytics_ga4_landing_pages/);
-    assert.match(texts.join("\n"), /INSERT INTO analytics_gsc_queries/);
+    assert.match(texts[1] ?? "", /DELETE FROM engine_analytics_runs/);
+    assert.match(texts.join("\n"), /INSERT INTO engine_analytics_ga4_landing_pages/);
+    assert.match(texts.join("\n"), /INSERT INTO engine_analytics_gsc_queries/);
     assert.equal(texts.some((text) => text.includes("audit_run_sections")), false);
     assert.match(texts.at(-1) ?? "", /COMMIT/);
-    const header = values[texts.findIndex((text) => text.includes("INSERT INTO analytics_runs"))];
+    const header = values[texts.findIndex((text) => text.includes("INSERT INTO engine_analytics_runs"))];
     assert.equal(header?.[29], 1);
-    const landing = values[texts.findIndex((text) => text.includes("INSERT INTO analytics_ga4_landing_pages"))];
+    const landing = values[texts.findIndex((text) => text.includes("INSERT INTO engine_analytics_ga4_landing_pages"))];
     assert.ok(Array.isArray(landing));
     assert.equal(
       landing.some((column) => Array.isArray(column) && column.includes(10)),

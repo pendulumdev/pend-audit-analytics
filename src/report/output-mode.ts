@@ -1,6 +1,6 @@
 export type AnalyticsOutputMode = "database" | "json";
 
-/** Database mode is chosen when either half of the database contract is present. */
+/** JSON when neither half is present. Database when both are present. One half throws. */
 export function chooseAnalyticsOutput(
   env: { databaseUrl?: string | null | undefined },
   argv: readonly string[],

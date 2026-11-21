@@ -184,25 +184,25 @@ describe("analytics cap memory", () => {
     await insertAnalyticsRows(mem.sql, "run-max", run);
     const delta = process.memoryUsage().heapUsed - before;
     const sql = mem.texts.join("\n");
-    assert.equal(mem.rows("analytics_ga4_landing_pages").length, LANDING_CAP);
-    assert.equal(mem.rows("analytics_gsc_queries").length, GSC_TOP_LIMIT);
-    assert.equal(mem.rows("analytics_gsc_pages").length, GSC_TOP_LIMIT);
+    assert.equal(mem.rows("engine_analytics_ga4_landing_pages").length, LANDING_CAP);
+    assert.equal(mem.rows("engine_analytics_gsc_queries").length, GSC_TOP_LIMIT);
+    assert.equal(mem.rows("engine_analytics_gsc_pages").length, GSC_TOP_LIMIT);
     assert.equal(
-      mem.rows("analytics_events").filter((row) => row.kind === "received").length,
+      mem.rows("engine_analytics_events").filter((row) => row.kind === "received").length,
       EVENT_LIMIT,
     );
     assert.equal(
-      mem.rows("analytics_events").filter((row) => row.kind === "observed").length,
+      mem.rows("engine_analytics_events").filter((row) => row.kind === "observed").length,
       MAX_OBSERVE_URLS,
     );
-    assert.equal(mem.rows("analytics_tag_snippets").length, MAX_LANDING_TAG_PAGES + 1);
+    assert.equal(mem.rows("engine_analytics_tag_snippets").length, MAX_LANDING_TAG_PAGES + 1);
     assert.equal(
-      String(mem.rows("analytics_tag_snippets")[0]?.body).length,
+      String(mem.rows("engine_analytics_tag_snippets")[0]?.body).length,
       SNIPPET_MAX_CHARS,
     );
-    assert.equal(mem.rows("analytics_psi_pages").length, 4);
-    assert.equal(mem.rows("analytics_psi_insights").length, PSI_MAX_INSIGHTS * 4);
-    assert.equal(mem.rows("analytics_rivals").length, 1);
+    assert.equal(mem.rows("engine_analytics_psi_pages").length, 4);
+    assert.equal(mem.rows("engine_analytics_psi_insights").length, PSI_MAX_INSIGHTS * 4);
+    assert.equal(mem.rows("engine_analytics_rivals").length, 1);
     assert.equal(sql.includes("audit_run_sections"), false);
     assert.equal(sql.includes("::jsonb"), false);
     assert.ok(

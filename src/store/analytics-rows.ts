@@ -50,7 +50,7 @@ export async function insertAnalyticsRows(
 ): Promise<void> {
   await sql.query("BEGIN");
   try {
-    await sql.query(`DELETE FROM analytics_runs WHERE run_id = $1`, [runId]);
+    await sql.query(`DELETE FROM engine_analytics_runs WHERE run_id = $1`, [runId]);
     await insertHeader(sql, runId, run);
     await insertChildren(sql, runId, run);
     await sql.query("COMMIT");
@@ -72,7 +72,7 @@ async function insertHeader(sql: CrawlSql, runId: string, run: AuditRun): Promis
     ? ga4.newReturningDaily.reduce((sum, row) => sum + (row.returningUsers || 0), 0)
     : null;
   await sql.query(
-    `INSERT INTO analytics_runs (
+    `INSERT INTO engine_analytics_runs (
        run_id, range_start, range_end, previous_start, previous_end,
        ga4_property_id, gsc_site_url,
        sessions, total_users, engaged_sessions,
@@ -165,7 +165,7 @@ export async function insertGa4Tables(
 ): Promise<void> {
   await chunks(ga4.daily, async (rows) => {
     await sql.query(
-      `INSERT INTO analytics_ga4_daily (run_id, day, sessions, total_users, engaged_sessions)
+      `INSERT INTO engine_analytics_ga4_daily (run_id, day, sessions, total_users, engaged_sessions)
          SELECT $1, u.day::date, u.sessions, u.total_users, u.engaged_sessions
          FROM unnest($2::date[], $3::float8[], $4::float8[], $5::float8[])
            AS u(day, sessions, total_users, engaged_sessions)`,
@@ -180,7 +180,7 @@ export async function insertGa4Tables(
   });
   await chunks(ga4.organicDaily, async (rows) => {
     await sql.query(
-      `INSERT INTO analytics_ga4_organic_daily (run_id, day, sessions)
+      `INSERT INTO engine_analytics_ga4_organic_daily (run_id, day, sessions)
          SELECT $1, u.day::date, u.sessions
          FROM unnest($2::date[], $3::float8[]) AS u(day, sessions)`,
       [runId, rows.map((row) => row.date), rows.map((row) => row.sessions)],
@@ -188,7 +188,7 @@ export async function insertGa4Tables(
   });
   await chunks(ga4.newReturningDaily, async (rows) => {
     await sql.query(
-      `INSERT INTO analytics_ga4_new_returning (run_id, day, new_users, returning_users)
+      `INSERT INTO engine_analytics_ga4_new_returning (run_id, day, new_users, returning_users)
          SELECT $1, u.day::date, u.new_users, u.returning_users
          FROM unnest($2::date[], $3::float8[], $4::float8[])
            AS u(day, new_users, returning_users)`,
@@ -203,7 +203,7 @@ export async function insertGa4Tables(
   await chunks(ga4.channels, async (rows, offset) => {
     const base = offset;
     await sql.query(
-      `INSERT INTO analytics_ga4_channels (run_id, ordinal, name, sessions)
+      `INSERT INTO engine_analytics_ga4_channels (run_id, ordinal, name, sessions)
          SELECT $1, u.ordinal, u.name, u.sessions
          FROM unnest($2::int[], $3::text[], $4::float8[]) AS u(ordinal, name, sessions)`,
       [
@@ -217,7 +217,7 @@ export async function insertGa4Tables(
   await chunks(ga4.devices, async (rows, offset) => {
     const base = offset;
     await sql.query(
-      `INSERT INTO analytics_ga4_devices (run_id, ordinal, name, sessions)
+      `INSERT INTO engine_analytics_ga4_devices (run_id, ordinal, name, sessions)
          SELECT $1, u.ordinal, u.name, u.sessions
          FROM unnest($2::int[], $3::text[], $4::float8[]) AS u(ordinal, name, sessions)`,
       [
@@ -231,7 +231,7 @@ export async function insertGa4Tables(
   await chunks(ga4.landingPages, async (rows, offset) => {
     const base = offset;
     await sql.query(
-      `INSERT INTO analytics_ga4_landing_pages (
+      `INSERT INTO engine_analytics_ga4_landing_pages (
            run_id, ordinal, path, sessions, active_users, new_users, engaged_sessions,
            engagement_rate, user_engagement_duration, average_session_duration,
            screen_page_views, key_events, session_key_event_rate
@@ -274,7 +274,7 @@ export async function insertGscTables(
 ): Promise<void> {
   await chunks(gsc.daily, async (rows) => {
     await sql.query(
-      `INSERT INTO analytics_gsc_daily (run_id, day, clicks, impressions, ctr, position)
+      `INSERT INTO engine_analytics_gsc_daily (run_id, day, clicks, impressions, ctr, position)
          SELECT $1, u.day::date, u.clicks, u.impressions, u.ctr, u.position
          FROM unnest($2::date[], $3::float8[], $4::float8[], $5::float8[], $6::float8[])
            AS u(day, clicks, impressions, ctr, position)`,
@@ -291,7 +291,7 @@ export async function insertGscTables(
   await chunks(gsc.topQueries, async (rows, offset) => {
     const base = offset;
     await sql.query(
-      `INSERT INTO analytics_gsc_queries (run_id, ordinal, query, clicks, impressions, ctr, position)
+      `INSERT INTO engine_analytics_gsc_queries (run_id, ordinal, query, clicks, impressions, ctr, position)
          SELECT $1, u.ordinal, u.query, u.clicks, u.impressions, u.ctr, u.position
          FROM unnest($2::int[], $3::text[], $4::float8[], $5::float8[], $6::float8[], $7::float8[])
            AS u(ordinal, query, clicks, impressions, ctr, position)`,
@@ -309,7 +309,7 @@ export async function insertGscTables(
   await chunks(gsc.topPages, async (rows, offset) => {
     const base = offset;
     await sql.query(
-      `INSERT INTO analytics_gsc_pages (run_id, ordinal, page, clicks, impressions, ctr, position)
+      `INSERT INTO engine_analytics_gsc_pages (run_id, ordinal, page, clicks, impressions, ctr, position)
          SELECT $1, u.ordinal, u.page, u.clicks, u.impressions, u.ctr, u.position
          FROM unnest($2::int[], $3::text[], $4::float8[], $5::float8[], $6::float8[], $7::float8[])
            AS u(ordinal, page, clicks, impressions, ctr, position)`,
@@ -334,14 +334,14 @@ export async function insertGoogleSetup(
   await chunks(setup.urls, async (rows, offset) => {
     const base = offset;
     await sql.query(
-      `INSERT INTO analytics_tag_fetches (run_id, ordinal, url)
+      `INSERT INTO engine_analytics_tag_fetches (run_id, ordinal, url)
          SELECT $1, u.ordinal, u.url FROM unnest($2::int[], $3::text[]) AS u(ordinal, url)`,
       [runId, rows.map((_, index) => base + index), rows],
     );
   });
   for (const [snippetOrdinal, snippet] of setup.snippets.entries()) {
     await sql.query(
-      `INSERT INTO analytics_tag_snippets (run_id, ordinal, kind, location, fingerprint, body)
+      `INSERT INTO engine_analytics_tag_snippets (run_id, ordinal, kind, location, fingerprint, body)
          VALUES ($1, $2, $3, $4, $5, $6)`,
       [
         runId,
@@ -355,7 +355,7 @@ export async function insertGoogleSetup(
     await chunks(snippet.destinations, async (rows, offset) => {
       const base = offset;
       await sql.query(
-        `INSERT INTO analytics_tag_destinations
+        `INSERT INTO engine_analytics_tag_destinations
              (run_id, snippet_ordinal, ordinal, family, destination_id)
            SELECT $1, $2, u.ordinal, u.family, u.destination_id
            FROM unnest($3::int[], $4::text[], $5::text[])
@@ -371,7 +371,7 @@ export async function insertGoogleSetup(
     });
     await chunks(snippet.pages, async (rows) => {
       await sql.query(
-        `INSERT INTO analytics_tag_snippet_pages (run_id, snippet_ordinal, page)
+        `INSERT INTO engine_analytics_tag_snippet_pages (run_id, snippet_ordinal, page)
            SELECT $1, $2, u.page FROM unnest($3::text[]) AS u(page)`,
         [runId, snippetOrdinal, rows],
       );
@@ -379,14 +379,14 @@ export async function insertGoogleSetup(
   }
   for (const container of setup.gtm ?? []) {
     await sql.query(
-      `INSERT INTO analytics_gtm_containers (run_id, container_id, parse_error)
+      `INSERT INTO engine_analytics_gtm_containers (run_id, container_id, parse_error)
          VALUES ($1, $2, $3)`,
       [runId, container.containerId, container.parseError ?? null],
     );
     const counts = Object.entries(container.tagTypeCounts ?? {});
     await chunks(counts, async (rows) => {
       await sql.query(
-        `INSERT INTO analytics_gtm_tag_counts (run_id, container_id, tag_type, count)
+        `INSERT INTO engine_analytics_gtm_tag_counts (run_id, container_id, tag_type, count)
            SELECT $1, $2, u.tag_type, u.count
            FROM unnest($3::text[], $4::int[]) AS u(tag_type, count)`,
         [
@@ -399,7 +399,7 @@ export async function insertGoogleSetup(
     });
     await chunks(container.destinations ?? [], async (rows) => {
       await sql.query(
-        `INSERT INTO analytics_gtm_destinations (run_id, container_id, destination)
+        `INSERT INTO engine_analytics_gtm_destinations (run_id, container_id, destination)
            SELECT $1, $2, u.destination FROM unnest($3::text[]) AS u(destination)`,
         [runId, container.containerId, rows],
       );
@@ -407,13 +407,13 @@ export async function insertGoogleSetup(
   }
   for (const [ordinal, collision] of setup.collisions.entries()) {
     await sql.query(
-      `INSERT INTO analytics_tag_collisions (run_id, ordinal, code, severity, detail)
+      `INSERT INTO engine_analytics_tag_collisions (run_id, ordinal, code, severity, detail)
          VALUES ($1, $2, $3, $4, $5)`,
       [runId, ordinal, collision.code, collision.severity, collision.detail],
     );
     await chunks(collision.urls ?? [], async (rows) => {
       await sql.query(
-        `INSERT INTO analytics_tag_collision_urls (run_id, collision_ordinal, url)
+        `INSERT INTO engine_analytics_tag_collision_urls (run_id, collision_ordinal, url)
            SELECT $1, $2, u.url FROM unnest($3::text[]) AS u(url)`,
         [runId, ordinal, rows],
       );
@@ -466,7 +466,7 @@ export async function insertRival(
   rival: RivalOriginObservation,
 ): Promise<void> {
   await sql.query(
-    `INSERT INTO analytics_rivals (run_id, host, error) VALUES ($1, $2, $3)`,
+    `INSERT INTO engine_analytics_rivals (run_id, host, error) VALUES ($1, $2, $3)`,
     [runId, rival.host, rival.error ?? null],
   );
   if (rival.crux) await insertCrux(sql, runId, rival.host, rival.crux);
@@ -483,7 +483,7 @@ export async function insertInsightRows(
   await chunks(insights, async (rows, offset) => {
     const base = offset;
     await sql.query(
-      `INSERT INTO analytics_insights (
+      `INSERT INTO engine_analytics_insights (
          run_id, ordinal, insight_id, response, title, detail, engineer_text, client_text
        )
        SELECT $1, u.ordinal, u.insight_id, u.response, u.title, u.detail, u.engineer_text, u.client_text
@@ -512,7 +512,7 @@ export async function insertAnalyticsErrors(
   await chunks(errors, async (rows, offset) => {
     const base = startOrdinal + offset;
     await sql.query(
-      `INSERT INTO analytics_errors (run_id, ordinal, source, host, message)
+      `INSERT INTO engine_analytics_errors (run_id, ordinal, source, host, message)
        SELECT $1, u.ordinal, u.source, u.host, u.message
        FROM unnest($2::int[], $3::text[], $4::text[], $5::text[])
          AS u(ordinal, source, host, message)`,
@@ -542,7 +542,7 @@ async function insertEvents<T>(
   await chunks(rows, async (slice, offset) => {
     const mapped = slice.map(mapRow);
     await sql.query(
-      `INSERT INTO analytics_events (run_id, kind, ordinal, name, count, source, trigger)
+      `INSERT INTO engine_analytics_events (run_id, kind, ordinal, name, count, source, trigger)
        SELECT $1, $2, u.ordinal, u.name, u.count, NULLIF(u.source, ''), NULLIF(u.trigger, '')
        FROM unnest($3::int[], $4::text[], $5::float8[], $6::text[], $7::text[])
          AS u(ordinal, name, count, source, trigger)`,
@@ -566,7 +566,7 @@ export async function insertCrux(
   crux: NonNullable<AuditRun["analytics"]["crux"]>,
 ): Promise<void> {
   await sql.query(
-    `INSERT INTO analytics_crux (
+    `INSERT INTO engine_analytics_crux (
        run_id, host, reason, detail, collection_start, collection_end, lcp_ms, inp_ms, cls
      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
      ON CONFLICT (run_id, host) DO NOTHING`,
@@ -592,7 +592,7 @@ export async function insertPsi(
 ): Promise<void> {
   const strategy = page.strategy ?? "mobile";
   await sql.query(
-    `INSERT INTO analytics_psi_pages (
+    `INSERT INTO engine_analytics_psi_pages (
        run_id, host, strategy, url, score, lighthouse_version, fetch_time, error, screenshot
      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
      ON CONFLICT (run_id, host, strategy) DO NOTHING`,
@@ -611,7 +611,7 @@ export async function insertPsi(
   );
   await chunks(page.metrics ?? [], async (rows) => {
     await sql.query(
-      `INSERT INTO analytics_psi_metrics (
+      `INSERT INTO engine_analytics_psi_metrics (
          run_id, host, strategy, metric_id, value, display_value, score
        )
        SELECT $1, $2, $3, u.metric_id, u.value, NULLIF(u.display_value, ''), u.score
@@ -632,7 +632,7 @@ export async function insertPsi(
   await chunks(page.insights ?? [], async (rows, offset) => {
     const base = offset;
     await sql.query(
-      `INSERT INTO analytics_psi_insights (
+      `INSERT INTO engine_analytics_psi_insights (
          run_id, host, strategy, ordinal, insight_id, title, kind,
          savings_ms, savings_bytes, score, display_value, description
        )

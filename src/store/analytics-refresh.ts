@@ -47,14 +47,14 @@ async function replaceErrors(
   source: ErrorSource,
   errors: readonly AnalyticsError[],
 ): Promise<void> {
-  await sql.query(`DELETE FROM analytics_errors WHERE run_id = $1 AND source = $2`, [
+  await sql.query(`DELETE FROM engine_analytics_errors WHERE run_id = $1 AND source = $2`, [
     runId,
     source,
   ]);
   const mine = errors.filter((row) => row.source === source);
   if (mine.length === 0) return;
   const found = await sql.query<{ max_ordinal: number | string }>(
-    `SELECT COALESCE(MAX(ordinal), -1) AS max_ordinal FROM analytics_errors WHERE run_id = $1`,
+    `SELECT COALESCE(MAX(ordinal), -1) AS max_ordinal FROM engine_analytics_errors WHERE run_id = $1`,
     [runId],
   );
   const max = Number(found.rows[0]?.max_ordinal ?? -1);
@@ -73,33 +73,33 @@ async function deleteRunTables(
 }
 
 const GA4_TABLES = [
-  "analytics_ga4_daily",
-  "analytics_ga4_organic_daily",
-  "analytics_ga4_new_returning",
-  "analytics_ga4_channels",
-  "analytics_ga4_devices",
-  "analytics_ga4_landing_pages",
+  "engine_analytics_ga4_daily",
+  "engine_analytics_ga4_organic_daily",
+  "engine_analytics_ga4_new_returning",
+  "engine_analytics_ga4_channels",
+  "engine_analytics_ga4_devices",
+  "engine_analytics_ga4_landing_pages",
 ] as const;
 
 const GSC_TABLES = [
-  "analytics_gsc_daily",
-  "analytics_gsc_queries",
-  "analytics_gsc_pages",
+  "engine_analytics_gsc_daily",
+  "engine_analytics_gsc_queries",
+  "engine_analytics_gsc_pages",
 ] as const;
 
 const TAG_TABLES = [
-  "analytics_tag_destinations",
-  "analytics_tag_snippet_pages",
-  "analytics_tag_snippets",
-  "analytics_tag_fetches",
-  "analytics_gtm_tag_counts",
-  "analytics_gtm_destinations",
-  "analytics_gtm_containers",
-  "analytics_tag_collision_urls",
-  "analytics_tag_collisions",
+  "engine_analytics_tag_destinations",
+  "engine_analytics_tag_snippet_pages",
+  "engine_analytics_tag_snippets",
+  "engine_analytics_tag_fetches",
+  "engine_analytics_gtm_tag_counts",
+  "engine_analytics_gtm_destinations",
+  "engine_analytics_gtm_containers",
+  "engine_analytics_tag_collision_urls",
+  "engine_analytics_tag_collisions",
 ] as const;
 
-/** Replace GA4 rows for this run. Does not delete `analytics_runs`. */
+/** Replace GA4 rows for this run. Does not delete `engine_analytics_runs`. */
 export async function refreshGa4Bundle(
   sql: CrawlSql,
   runId: string,
@@ -117,7 +117,7 @@ export async function refreshGa4Bundle(
   await withTransaction(sql, async () => {
     await deleteRunTables(sql, runId, GA4_TABLES);
     await sql.query(
-      `UPDATE analytics_runs SET
+      `UPDATE engine_analytics_runs SET
          ga4_property_id = $2,
          sessions = $3,
          total_users = $4,
@@ -160,7 +160,7 @@ export async function refreshGa4EventCounts(
   errors: readonly AnalyticsError[] = [],
 ): Promise<void> {
   await withTransaction(sql, async () => {
-    await sql.query(`DELETE FROM analytics_events WHERE run_id = $1 AND kind = $2`, [
+    await sql.query(`DELETE FROM engine_analytics_events WHERE run_id = $1 AND kind = $2`, [
       runId,
       "received",
     ]);
@@ -179,7 +179,7 @@ export async function refreshGscBundle(
   await withTransaction(sql, async () => {
     await deleteRunTables(sql, runId, GSC_TABLES);
     await sql.query(
-      `UPDATE analytics_runs SET
+      `UPDATE engine_analytics_runs SET
          gsc_site_url = $2,
          gsc_clicks = $3,
          gsc_impressions = $4,
@@ -221,7 +221,7 @@ export async function refreshGoogleSetup(
 ): Promise<void> {
   await withTransaction(sql, async () => {
     await deleteRunTables(sql, runId, TAG_TABLES);
-    await sql.query(`DELETE FROM analytics_events WHERE run_id = $1 AND kind = $2`, [
+    await sql.query(`DELETE FROM engine_analytics_events WHERE run_id = $1 AND kind = $2`, [
       runId,
       "configured",
     ]);
@@ -239,7 +239,7 @@ export async function refreshObservedEvents(
   errors: readonly AnalyticsError[] = [],
 ): Promise<void> {
   await withTransaction(sql, async () => {
-    await sql.query(`DELETE FROM analytics_events WHERE run_id = $1 AND kind = $2`, [
+    await sql.query(`DELETE FROM engine_analytics_events WHERE run_id = $1 AND kind = $2`, [
       runId,
       "observed",
     ]);
@@ -257,7 +257,7 @@ export async function refreshCruxOrigin(
 ): Promise<void> {
   const host = crux.origin;
   await withTransaction(sql, async () => {
-    await sql.query(`DELETE FROM analytics_crux WHERE run_id = $1 AND host = $2`, [
+    await sql.query(`DELETE FROM engine_analytics_crux WHERE run_id = $1 AND host = $2`, [
       runId,
       host,
     ]);
@@ -295,15 +295,15 @@ export async function refreshPsiPages(
     for (const [host, strategies] of groups) {
       const list = [...strategies];
       await sql.query(
-        `DELETE FROM analytics_psi_metrics WHERE run_id = $1 AND host = $2 AND strategy = ANY($3::text[])`,
+        `DELETE FROM engine_analytics_psi_metrics WHERE run_id = $1 AND host = $2 AND strategy = ANY($3::text[])`,
         [runId, host, list],
       );
       await sql.query(
-        `DELETE FROM analytics_psi_insights WHERE run_id = $1 AND host = $2 AND strategy = ANY($3::text[])`,
+        `DELETE FROM engine_analytics_psi_insights WHERE run_id = $1 AND host = $2 AND strategy = ANY($3::text[])`,
         [runId, host, list],
       );
       await sql.query(
-        `DELETE FROM analytics_psi_pages WHERE run_id = $1 AND host = $2 AND strategy = ANY($3::text[])`,
+        `DELETE FROM engine_analytics_psi_pages WHERE run_id = $1 AND host = $2 AND strategy = ANY($3::text[])`,
         [runId, host, list],
       );
     }
@@ -314,7 +314,7 @@ export async function refreshPsiPages(
   });
 }
 
-const RIVAL_HOSTS = `host IN (SELECT host FROM analytics_rivals WHERE run_id = $1)`;
+const RIVAL_HOSTS = `host IN (SELECT host FROM engine_analytics_rivals WHERE run_id = $1)`;
 
 /** Replace named rivals and their CrUX and PageSpeed rows. The site host stays. */
 export async function refreshNamedRivals(
@@ -324,22 +324,22 @@ export async function refreshNamedRivals(
   errors: readonly AnalyticsError[] = [],
 ): Promise<void> {
   await withTransaction(sql, async () => {
-    await sql.query(`DELETE FROM analytics_crux WHERE run_id = $1 AND ${RIVAL_HOSTS}`, [
+    await sql.query(`DELETE FROM engine_analytics_crux WHERE run_id = $1 AND ${RIVAL_HOSTS}`, [
       runId,
     ]);
     await sql.query(
-      `DELETE FROM analytics_psi_metrics WHERE run_id = $1 AND ${RIVAL_HOSTS}`,
+      `DELETE FROM engine_analytics_psi_metrics WHERE run_id = $1 AND ${RIVAL_HOSTS}`,
       [runId],
     );
     await sql.query(
-      `DELETE FROM analytics_psi_insights WHERE run_id = $1 AND ${RIVAL_HOSTS}`,
+      `DELETE FROM engine_analytics_psi_insights WHERE run_id = $1 AND ${RIVAL_HOSTS}`,
       [runId],
     );
     await sql.query(
-      `DELETE FROM analytics_psi_pages WHERE run_id = $1 AND ${RIVAL_HOSTS}`,
+      `DELETE FROM engine_analytics_psi_pages WHERE run_id = $1 AND ${RIVAL_HOSTS}`,
       [runId],
     );
-    await sql.query(`DELETE FROM analytics_rivals WHERE run_id = $1`, [runId]);
+    await sql.query(`DELETE FROM engine_analytics_rivals WHERE run_id = $1`, [runId]);
     for (const rival of rivals) await insertRival(sql, runId, rival);
     await replaceErrors(sql, runId, "rival", errors);
   });
@@ -352,7 +352,7 @@ export async function refreshAnalyticsInsights(
   insights: readonly AnalyticsInsight[],
 ): Promise<void> {
   await withTransaction(sql, async () => {
-    await sql.query(`DELETE FROM analytics_insights WHERE run_id = $1`, [runId]);
+    await sql.query(`DELETE FROM engine_analytics_insights WHERE run_id = $1`, [runId]);
     await insertInsightRows(sql, runId, insights);
   });
 }
