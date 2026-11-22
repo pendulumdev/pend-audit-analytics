@@ -483,21 +483,14 @@ export async function insertInsightRows(
   await chunks(insights, async (rows, offset) => {
     const base = offset;
     await sql.query(
-      `INSERT INTO engine_analytics_insights (
-         run_id, ordinal, insight_id, response, title, detail, engineer_text, client_text
-       )
-       SELECT $1, u.ordinal, u.insight_id, u.response, u.title, u.detail, u.engineer_text, u.client_text
-       FROM unnest($2::int[], $3::text[], $4::text[], $5::text[], $6::text[], $7::text[], $8::text[])
-         AS u(ordinal, insight_id, response, title, detail, engineer_text, client_text)`,
+      `INSERT INTO engine_analytics_insights (run_id, ordinal, insight_id, detail)
+       SELECT $1, u.ordinal, u.insight_id, u.detail
+       FROM unnest($2::int[], $3::text[], $4::text[]) AS u(ordinal, insight_id, detail)`,
       [
         runId,
         rows.map((_, index) => base + index),
         rows.map((row) => row.id),
-        rows.map((row) => row.response),
-        rows.map((row) => row.title),
         rows.map((row) => row.detail),
-        rows.map((row) => row.remediation.engineer),
-        rows.map((row) => row.remediation.client),
       ],
     );
   });

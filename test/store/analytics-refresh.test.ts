@@ -284,8 +284,8 @@ describe("analytics partial refresh", () => {
       ["rewritten-query"],
     );
     assert.deepEqual(
-      runRows(mem, "engine_analytics_insights").map((row) => row.title),
-      ["New insight"],
+      runRows(mem, "engine_analytics_insights").map((row) => [row.insight_id, row.detail]),
+      [["new", "fresh"]],
     );
     assert.deepEqual(
       runRows(mem, "engine_analytics_tag_snippets").map((row) => row.fingerprint),
@@ -593,8 +593,8 @@ describe("analytics partial refresh", () => {
       },
     ]);
     assert.deepEqual(
-      runRows(mem, "engine_analytics_insights").map((row) => row.title),
-      ["New insight"],
+      runRows(mem, "engine_analytics_insights").map((row) => [row.insight_id, row.detail]),
+      [["new", "fresh"]],
     );
     assert.deepEqual(runRows(mem, "engine_analytics_ga4_landing_pages"), landings);
     assert.deepEqual(runRows(mem, "engine_analytics_gsc_queries"), queries);
