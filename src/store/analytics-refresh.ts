@@ -47,10 +47,10 @@ async function replaceErrors(
   source: ErrorSource,
   errors: readonly AnalyticsError[],
 ): Promise<void> {
-  await sql.query(`DELETE FROM engine_analytics_errors WHERE run_id = $1 AND source = $2`, [
-    runId,
-    source,
-  ]);
+  await sql.query(
+    `DELETE FROM engine_analytics_errors WHERE run_id = $1 AND source = $2`,
+    [runId, source],
+  );
   const mine = errors.filter((row) => row.source === source);
   if (mine.length === 0) return;
   const found = await sql.query<{ max_ordinal: number | string }>(
@@ -160,10 +160,10 @@ export async function refreshGa4EventCounts(
   errors: readonly AnalyticsError[] = [],
 ): Promise<void> {
   await withTransaction(sql, async () => {
-    await sql.query(`DELETE FROM engine_analytics_events WHERE run_id = $1 AND kind = $2`, [
-      runId,
-      "received",
-    ]);
+    await sql.query(
+      `DELETE FROM engine_analytics_events WHERE run_id = $1 AND kind = $2`,
+      [runId, "received"],
+    );
     await insertReceivedEvents(sql, runId, received);
     await replaceErrors(sql, runId, "ga4", errors);
   });
@@ -221,10 +221,10 @@ export async function refreshGoogleSetup(
 ): Promise<void> {
   await withTransaction(sql, async () => {
     await deleteRunTables(sql, runId, TAG_TABLES);
-    await sql.query(`DELETE FROM engine_analytics_events WHERE run_id = $1 AND kind = $2`, [
-      runId,
-      "configured",
-    ]);
+    await sql.query(
+      `DELETE FROM engine_analytics_events WHERE run_id = $1 AND kind = $2`,
+      [runId, "configured"],
+    );
     await insertGoogleSetup(sql, runId, setup);
     await insertConfiguredEvents(sql, runId, configured);
     await replaceErrors(sql, runId, "tags", errors);
@@ -239,10 +239,10 @@ export async function refreshObservedEvents(
   errors: readonly AnalyticsError[] = [],
 ): Promise<void> {
   await withTransaction(sql, async () => {
-    await sql.query(`DELETE FROM engine_analytics_events WHERE run_id = $1 AND kind = $2`, [
-      runId,
-      "observed",
-    ]);
+    await sql.query(
+      `DELETE FROM engine_analytics_events WHERE run_id = $1 AND kind = $2`,
+      [runId, "observed"],
+    );
     await insertObservedEvents(sql, runId, observed);
     await replaceErrors(sql, runId, "observe", errors);
   });
@@ -324,9 +324,10 @@ export async function refreshNamedRivals(
   errors: readonly AnalyticsError[] = [],
 ): Promise<void> {
   await withTransaction(sql, async () => {
-    await sql.query(`DELETE FROM engine_analytics_crux WHERE run_id = $1 AND ${RIVAL_HOSTS}`, [
-      runId,
-    ]);
+    await sql.query(
+      `DELETE FROM engine_analytics_crux WHERE run_id = $1 AND ${RIVAL_HOSTS}`,
+      [runId],
+    );
     await sql.query(
       `DELETE FROM engine_analytics_psi_metrics WHERE run_id = $1 AND ${RIVAL_HOSTS}`,
       [runId],

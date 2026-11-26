@@ -27,7 +27,8 @@ export const ANALYTICS_INSIGHT_CATALOG = [
     id: "gsc-clicks-drop-watch",
     response: "watch",
     title: "Organic clicks trended down",
-    engineer: "Compare top pages/queries period-over-period and watch for continued decline.",
+    engineer:
+      "Compare top pages/queries period-over-period and watch for continued decline.",
     client:
       "Organic clicks dipped vs the prior period - worth monitoring alongside content and technical fixes.",
   },
@@ -45,7 +46,8 @@ export const ANALYTICS_INSIGHT_CATALOG = [
     response: "watch",
     title: "Search impressions trended down",
     engineer: "Watch query coverage and ensure important URLs remain indexable.",
-    client: "Search visibility dipped slightly - keep an eye on it in the next reporting window.",
+    client:
+      "Search visibility dipped slightly - keep an eye on it in the next reporting window.",
   },
   {
     id: "gsc-low-ctr-queries",

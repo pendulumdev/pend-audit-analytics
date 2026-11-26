@@ -324,7 +324,7 @@ export interface ManualProgress {
   percent: number;
 }
 
-export type ScoreBand = "Excellent" | "Good" | "Needs work" | "Critical gaps";
+export type ScoreBand = "Great" | "Good" | "Ok" | "Poor" | "Bad";
 
 /** Unscored envelope kept so consumers that read `score` still parse. */
 export interface ScoreSummary {

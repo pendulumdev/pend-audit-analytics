@@ -54,7 +54,10 @@ describe("observeNamedRivals", () => {
       });
       assert.equal(rows[0]?.crux?.lcpMs, 2100);
       assert.equal(rows[0]?.psi, undefined);
-      assert.equal(seen.some((url) => url.includes("pagespeedonline")), false);
+      assert.equal(
+        seen.some((url) => url.includes("pagespeedonline")),
+        false,
+      );
     } finally {
       globalThis.fetch = realFetch;
     }

@@ -195,7 +195,10 @@ describe("analytics cap memory", () => {
       mem.rows("engine_analytics_events").filter((row) => row.kind === "observed").length,
       MAX_OBSERVE_URLS,
     );
-    assert.equal(mem.rows("engine_analytics_tag_snippets").length, MAX_LANDING_TAG_PAGES + 1);
+    assert.equal(
+      mem.rows("engine_analytics_tag_snippets").length,
+      MAX_LANDING_TAG_PAGES + 1,
+    );
     assert.equal(
       String(mem.rows("engine_analytics_tag_snippets")[0]?.body).length,
       SNIPPET_MAX_CHARS,

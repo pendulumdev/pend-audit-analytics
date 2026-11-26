@@ -48,11 +48,30 @@ describe("insertAnalyticsRows", () => {
         pages: [],
       },
       analytics: {
-        range: { start: "2026-01-01", end: "2026-01-28", previousStart: "2025-12-04", previousEnd: "2025-12-31" },
+        range: {
+          start: "2026-01-01",
+          end: "2026-01-28",
+          previousStart: "2025-12-04",
+          previousEnd: "2025-12-31",
+        },
         ga4: {
           propertyId: "530055925",
           daily: [{ date: "2026-01-01", sessions: 2, totalUsers: 2, engagedSessions: 1 }],
-          landingPages: [{ path: "/", sessions: 2, engagementRate: 0.5, activeUsers: 2, newUsers: 1, engagedSessions: 1, userEngagementDuration: 10, averageSessionDuration: 8, screenPageViews: 3, keyEvents: 0, sessionKeyEventRate: 0 }],
+          landingPages: [
+            {
+              path: "/",
+              sessions: 2,
+              engagementRate: 0.5,
+              activeUsers: 2,
+              newUsers: 1,
+              engagedSessions: 1,
+              userEngagementDuration: 10,
+              averageSessionDuration: 8,
+              screenPageViews: 3,
+              keyEvents: 0,
+              sessionKeyEventRate: 0,
+            },
+          ],
           organicDaily: [],
           channels: [{ name: "Organic Search", sessions: 2 }],
           devices: [],
@@ -66,8 +85,18 @@ describe("insertAnalyticsRows", () => {
         gsc: {
           siteUrl: "sc-domain:pendulumdev.co.uk",
           daily: [],
-          topPages: [{ page: "https://pendulumdev.co.uk/", clicks: 1, impressions: 2, ctr: 0.5, position: 3 }],
-          topQueries: [{ query: "pendulum", clicks: 1, impressions: 2, ctr: 0.5, position: 4 }],
+          topPages: [
+            {
+              page: "https://pendulumdev.co.uk/",
+              clicks: 1,
+              impressions: 2,
+              ctr: 0.5,
+              position: 3,
+            },
+          ],
+          topQueries: [
+            { query: "pendulum", clicks: 1, impressions: 2, ctr: 0.5, position: 4 },
+          ],
           totals: { clicks: 1, impressions: 2, ctr: 0.5, position: 3 },
         },
         insights: [],
@@ -78,11 +107,22 @@ describe("insertAnalyticsRows", () => {
     assert.match(texts[1] ?? "", /DELETE FROM engine_analytics_runs/);
     assert.match(texts.join("\n"), /INSERT INTO engine_analytics_ga4_landing_pages/);
     assert.match(texts.join("\n"), /INSERT INTO engine_analytics_gsc_queries/);
-    assert.equal(texts.some((text) => text.includes("audit_run_sections")), false);
+    assert.equal(
+      texts.some((text) => text.includes("audit_run_sections")),
+      false,
+    );
     assert.match(texts.at(-1) ?? "", /COMMIT/);
-    const header = values[texts.findIndex((text) => text.includes("INSERT INTO engine_analytics_runs"))];
+    const header =
+      values[
+        texts.findIndex((text) => text.includes("INSERT INTO engine_analytics_runs"))
+      ];
     assert.equal(header?.[29], 1);
-    const landing = values[texts.findIndex((text) => text.includes("INSERT INTO engine_analytics_ga4_landing_pages"))];
+    const landing =
+      values[
+        texts.findIndex((text) =>
+          text.includes("INSERT INTO engine_analytics_ga4_landing_pages"),
+        )
+      ];
     assert.ok(Array.isArray(landing));
     assert.equal(
       landing.some((column) => Array.isArray(column) && column.includes(10)),

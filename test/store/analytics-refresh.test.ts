@@ -284,7 +284,10 @@ describe("analytics partial refresh", () => {
       ["rewritten-query"],
     );
     assert.deepEqual(
-      runRows(mem, "engine_analytics_insights").map((row) => [row.insight_id, row.detail]),
+      runRows(mem, "engine_analytics_insights").map((row) => [
+        row.insight_id,
+        row.detail,
+      ]),
       [["new", "fresh"]],
     );
     assert.deepEqual(
@@ -308,7 +311,9 @@ describe("analytics partial refresh", () => {
       { source: "ga4", message: "ga4-new" },
     ]);
     assert.equal(
-      mem.texts.slice(mark).some((text) => text.includes("DELETE FROM engine_analytics_runs")),
+      mem.texts
+        .slice(mark)
+        .some((text) => text.includes("DELETE FROM engine_analytics_runs")),
       false,
     );
     assert.deepEqual(
@@ -321,7 +326,9 @@ describe("analytics partial refresh", () => {
     assert.deepEqual(frozen(header(mem)), beforeHeader);
     assert.deepEqual(runRows(mem, "engine_analytics_gsc_queries"), queries);
     assert.deepEqual(runRows(mem, "engine_analytics_insights"), insights);
-    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "ga4"), ["ga4-new"]);
+    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "ga4"), [
+      "ga4-new",
+    ]);
     assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "tags"), tags);
   });
 
@@ -347,7 +354,9 @@ describe("analytics partial refresh", () => {
       events.filter((row) => row.kind === "observed").map((row) => row.name),
       ["scroll"],
     );
-    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "tags"), ["tags-old"]);
+    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "tags"), [
+      "tags-old",
+    ]);
     assert.deepEqual(frozen(header(mem)), beforeHeader);
   });
 
@@ -365,8 +374,12 @@ describe("analytics partial refresh", () => {
     assert.equal(header(mem).gsc_clicks, 6);
     assert.equal(header(mem).sessions, 2);
     assert.deepEqual(runRows(mem, "engine_analytics_ga4_landing_pages"), landings);
-    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "gsc"), ["gsc-new"]);
-    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "ga4"), ["ga4-old"]);
+    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "gsc"), [
+      "gsc-new",
+    ]);
+    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "ga4"), [
+      "ga4-old",
+    ]);
     assert.deepEqual(frozen(header(mem)), beforeHeader);
   });
 
@@ -428,8 +441,12 @@ describe("analytics partial refresh", () => {
       events.filter((row) => row.kind === "received").map((row) => row.name),
       ["purchase"],
     );
-    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "tags"), ["tags-new"]);
-    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "gsc"), ["gsc-old"]);
+    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "tags"), [
+      "tags-new",
+    ]);
+    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "gsc"), [
+      "gsc-old",
+    ]);
     assert.deepEqual(frozen(header(mem)), beforeHeader);
   });
 
@@ -458,7 +475,9 @@ describe("analytics partial refresh", () => {
     assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "observe"), [
       "observe-new",
     ]);
-    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "tags"), ["tags-old"]);
+    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "tags"), [
+      "tags-old",
+    ]);
     assert.deepEqual(frozen(header(mem)), beforeHeader);
   });
 
@@ -471,8 +490,12 @@ describe("analytics partial refresh", () => {
     const crux = runRows(mem, "engine_analytics_crux");
     assert.equal(crux.find((row) => row.host === SITE)?.lcp_ms, 250);
     assert.equal(crux.find((row) => row.host === RIVAL)?.lcp_ms, 9);
-    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "crux"), ["crux-new"]);
-    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "rival"), ["rival-old"]);
+    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "crux"), [
+      "crux-new",
+    ]);
+    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "rival"), [
+      "rival-old",
+    ]);
     assert.deepEqual(frozen(header(mem)), beforeHeader);
   });
 
@@ -512,16 +535,30 @@ describe("analytics partial refresh", () => {
       ),
       false,
     );
-    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "psi"), ["psi-new"]);
-    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "gsc"), ["gsc-old"]);
+    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "psi"), [
+      "psi-new",
+    ]);
+    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "gsc"), [
+      "gsc-old",
+    ]);
     assert.deepEqual(frozen(header(mem)), beforeHeader);
   });
 
   it("refreshPsiPages replaces the fetched site strategies and leaves rival hosts", async () => {
     const mem = await seeded();
     await refreshPsiPages(mem.sql, "run-1", [
-      { url: `${SITE}/`, strategy: "mobile", score: 71, screenshot: "psi-shots/psi-mobile.jpg" },
-      { url: `${SITE}/`, strategy: "desktop", score: 81, screenshot: "psi-shots/psi-desktop.jpg" },
+      {
+        url: `${SITE}/`,
+        strategy: "mobile",
+        score: 71,
+        screenshot: "psi-shots/psi-mobile.jpg",
+      },
+      {
+        url: `${SITE}/`,
+        strategy: "desktop",
+        score: 81,
+        screenshot: "psi-shots/psi-desktop.jpg",
+      },
     ]);
     const pages = runRows(mem, "engine_analytics_psi_pages");
     assert.equal(
@@ -572,8 +609,12 @@ describe("analytics partial refresh", () => {
       MOBILE_DIGEST,
     );
     assert.equal(pages.find((row) => row.host === nextRival)?.score, 15);
-    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "rival"), ["rival-new"]);
-    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "crux"), ["crux-old"]);
+    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "rival"), [
+      "rival-new",
+    ]);
+    assert.deepEqual(messages(runRows(mem, "engine_analytics_errors"), "crux"), [
+      "crux-old",
+    ]);
     assert.deepEqual(frozen(header(mem)), beforeHeader);
   });
 
@@ -593,7 +634,10 @@ describe("analytics partial refresh", () => {
       },
     ]);
     assert.deepEqual(
-      runRows(mem, "engine_analytics_insights").map((row) => [row.insight_id, row.detail]),
+      runRows(mem, "engine_analytics_insights").map((row) => [
+        row.insight_id,
+        row.detail,
+      ]),
       [["new", "fresh"]],
     );
     assert.deepEqual(runRows(mem, "engine_analytics_ga4_landing_pages"), landings);

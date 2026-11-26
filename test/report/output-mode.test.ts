@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { describe, it } from "node:test";
 import { chooseAnalyticsOutput } from "../../src/report/output-mode.js";
 import { writeReports } from "../../src/report/write.js";
 import type { AuditRun } from "../../src/types.js";
@@ -14,7 +14,11 @@ describe("analytics output mode", () => {
 
   it("uses the database when the url and run id are both set", () => {
     assert.equal(
-      chooseAnalyticsOutput({ databaseUrl: "postgres://db" }, ["audit", "--run-id", "run-1"]),
+      chooseAnalyticsOutput({ databaseUrl: "postgres://db" }, [
+        "audit",
+        "--run-id",
+        "run-1",
+      ]),
       "database",
     );
   });
