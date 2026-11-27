@@ -10,6 +10,7 @@ import type {
   PsiStrategy,
 } from "../types.js";
 import { USER_AGENT } from "../version.js";
+import { EDGE_CHALLENGE_ERROR, isEdgeChallengeDocument } from "./edge-challenge.js";
 
 const PSI_URL = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed";
 const FETCH_TIMEOUT_MS = 180_000;
@@ -280,6 +281,34 @@ function insightsFromResult(result: LighthouseSlice): PsiInsight[] {
     .slice(0, PSI_MAX_INSIGHTS);
 }
 
+/** True when the Lighthouse document title is an edge bot wall. */
+export function lighthouseDocumentIsEdgeChallenge(body: unknown): boolean {
+  const title = lighthouseDocumentTitle(body);
+  return title.length > 0 && isEdgeChallengeDocument(title, "");
+}
+
+function lighthouseDocumentTitle(body: unknown): string {
+  if (!body || typeof body !== "object") return "";
+  const result = (body as { lighthouseResult?: unknown }).lighthouseResult;
+  if (!result || typeof result !== "object") return "";
+  const audits = (result as { audits?: unknown }).audits;
+  if (!audits || typeof audits !== "object") return "";
+  const audit = (audits as Record<string, unknown>)["document-title"];
+  if (!audit || typeof audit !== "object") return "";
+  const record = audit as { displayValue?: unknown; details?: { items?: unknown } };
+  const parts: string[] = [];
+  if (typeof record.displayValue === "string") parts.push(record.displayValue);
+  if (Array.isArray(record.details?.items)) {
+    for (const item of record.details.items) {
+      if (!item || typeof item !== "object") continue;
+      const row = item as { text?: unknown; title?: unknown };
+      if (typeof row.text === "string") parts.push(row.text);
+      if (typeof row.title === "string") parts.push(row.title);
+    }
+  }
+  return parts.join(" ");
+}
+
 /** Map a pagespeedonline.v5 JSON body to one lab row. Performance only. */
 export function parsePsiPage(url: string, body: unknown): Omit<PsiPageRow, "strategy"> {
   if (!body || typeof body !== "object") {
@@ -416,6 +445,9 @@ export async function fetchPsiPage(opts: {
         error: redactApiKey(apiErrorMessage(body, `HTTP ${res.status}`), opts.apiKey),
       };
     }
+    if (lighthouseDocumentIsEdgeChallenge(body)) {
+      return { url: opts.url, strategy: opts.strategy, error: EDGE_CHALLENGE_ERROR };
+    }
     const row = parsePsiPage(opts.url, body);
     const shot = parsePsiScreenshot(body);
     let screenshot: string | undefined;
@@ -455,14 +487,14 @@ export async function fetchPsiPages(opts: {
 }): Promise<PsiLabBundle> {
   const pages: PsiPageRow[] = [];
   for (const job of opts.jobs) {
-    pages.push(
-      await fetchPsiPage({
-        url: job.url,
-        strategy: job.strategy,
-        apiKey: opts.apiKey,
-        ...(opts.outDir !== undefined && { outDir: opts.outDir }),
-      }),
-    );
+    const row = await fetchPsiPage({
+      url: job.url,
+      strategy: job.strategy,
+      apiKey: opts.apiKey,
+      ...(opts.outDir !== undefined && { outDir: opts.outDir }),
+    });
+    if (row.error === EDGE_CHALLENGE_ERROR) continue;
+    pages.push(row);
   }
   return { pages };
 }

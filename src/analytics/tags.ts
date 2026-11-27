@@ -10,6 +10,11 @@ import type {
   GoogleTagSnippetKind,
 } from "../types.js";
 import { USER_AGENT } from "../version.js";
+import {
+  EdgeChallengeError,
+  isEdgeChallengeDocument,
+  isEdgeChallengeError,
+} from "./edge-challenge.js";
 
 const FETCH_TIMEOUT_MS = 12_000;
 const MAX_BODY_BYTES = 1_500_000;
@@ -42,6 +47,7 @@ export type FetchLike = (
   ok: boolean;
   status: number;
   text(): Promise<string>;
+  headers?: { get(name: string): string | null };
 }>;
 
 export function fingerprintSnippet(text: string): string {
@@ -516,16 +522,32 @@ export function parseConfiguredEvents(
   return found;
 }
 
+function challengeHeaders(res: {
+  headers?: { get(name: string): string | null };
+}): Record<string, string> {
+  const headers = res.headers;
+  if (!headers || typeof headers.get !== "function") return {};
+  const out: Record<string, string> = {};
+  for (const name of ["x-vercel-mitigated", "cf-mitigated"]) {
+    const value = headers.get(name);
+    if (value) out[name] = value;
+  }
+  return out;
+}
+
 export async function fetchText(url: string, fetchImpl: FetchLike): Promise<string> {
   const signal = AbortSignal.timeout(FETCH_TIMEOUT_MS);
   const res = await fetchImpl(url, {
     headers: { "user-agent": USER_AGENT, accept: "text/html,application/javascript,*/*" },
     signal,
   });
+  const text = await res.text();
+  if (isEdgeChallengeDocument("", text, challengeHeaders(res))) {
+    throw new EdgeChallengeError();
+  }
   if (!res.ok) {
     throw new Error(`GET ${url} returned ${res.status}`);
   }
-  const text = await res.text();
   if (text.length > MAX_BODY_BYTES) {
     return text.slice(0, MAX_BODY_BYTES);
   }
@@ -739,8 +761,11 @@ export async function collectGoogleSetup(opts: {
     let html: string | undefined =
       (isHome ? opts.html : undefined) ?? opts.htmlByUrl?.[url];
     try {
+      if (html != null && isEdgeChallengeDocument("", html))
+        throw new EdgeChallengeError();
       if (html == null) html = await fetchText(url, fetchImpl);
     } catch (err) {
+      if (isEdgeChallengeError(err)) throw err;
       const message = err instanceof Error ? err.message : String(err);
       errors.push(message);
       continue;

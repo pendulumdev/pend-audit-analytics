@@ -8,7 +8,7 @@ What this tool connects to, writes, and expects you to contain. To report a vuln
 
 ## The config is trusted input
 
-`baseUrl` drives the public HTML tag scan, the CrUX origin, and the homepage PageSpeed lab check.
+`baseUrl` drives the public HTML tag scan, the CrUX origin, and the homepage PageSpeed lab check. A homepage GET that is an edge bot wall fails the run. A PageSpeed lab row whose document is that wall is not stored.
 
 There is no private-address filter. If an attacker can write your `audit-config-analytics.toml`, they can make this tool issue requests from wherever it runs, including to `localhost`, link-local metadata endpoints, and hosts inside your network.
 

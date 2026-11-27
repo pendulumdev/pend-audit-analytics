@@ -2,6 +2,7 @@ import type { AnalyticsBundle, AnalyticsConfig, AnalyticsError } from "../types.
 import { getGoogleAccessToken } from "./auth.js";
 import { fetchCruxOrigin, originFromBaseUrl, pagespeedApiKey } from "./crux.js";
 import { resolveAnalyticsRange } from "./dates.js";
+import { isEdgeChallengeError } from "./edge-challenge.js";
 import { psiSoftErrors, softError } from "./errors.js";
 import { fetchGa4Bundle, fetchGa4EventCounts } from "./ga4.js";
 import { fetchGscBundle } from "./gsc.js";
@@ -50,6 +51,7 @@ export async function fetchAnalyticsBundle(
         errors.push({ source: "tags", message: tags.error });
       }
     } catch (err) {
+      if (isEdgeChallengeError(err)) throw err;
       errors.push({
         source: "tags",
         message: err instanceof Error ? err.message : String(err),
@@ -150,6 +152,7 @@ export async function fetchAnalyticsBundle(
           errors.push({ source: "tags", message: tags.error });
         }
       } catch (err) {
+        if (isEdgeChallengeError(err)) throw err;
         errors.push({
           source: "tags",
           message: err instanceof Error ? err.message : String(err),
