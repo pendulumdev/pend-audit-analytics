@@ -407,9 +407,15 @@ export async function insertGoogleSetup(
   }
   for (const [ordinal, collision] of setup.collisions.entries()) {
     await sql.query(
-      `INSERT INTO engine_analytics_tag_collisions (run_id, ordinal, code, severity, detail)
-         VALUES ($1, $2, $3, $4, $5)`,
-      [runId, ordinal, collision.code, collision.severity, collision.detail],
+      `INSERT INTO engine_analytics_tag_collisions (run_id, ordinal, code, severity, params)
+         VALUES ($1, $2, $3, $4, $5::jsonb)`,
+      [
+        runId,
+        ordinal,
+        collision.code,
+        collision.severity,
+        JSON.stringify(collision.params ?? {}),
+      ],
     );
     await chunks(collision.urls ?? [], async (rows) => {
       await sql.query(
@@ -483,14 +489,14 @@ export async function insertInsightRows(
   await chunks(insights, async (rows, offset) => {
     const base = offset;
     await sql.query(
-      `INSERT INTO engine_analytics_insights (run_id, ordinal, insight_id, detail)
-       SELECT $1, u.ordinal, u.insight_id, u.detail
-       FROM unnest($2::int[], $3::text[], $4::text[]) AS u(ordinal, insight_id, detail)`,
+      `INSERT INTO engine_analytics_insights (run_id, ordinal, insight_id, params)
+       SELECT $1, u.ordinal, u.insight_id, u.params
+       FROM unnest($2::int[], $3::text[], $4::jsonb[]) AS u(ordinal, insight_id, params)`,
       [
         runId,
         rows.map((_, index) => base + index),
         rows.map((row) => row.id),
-        rows.map((row) => row.detail),
+        rows.map((row) => JSON.stringify(row.params ?? {})),
       ],
     );
   });

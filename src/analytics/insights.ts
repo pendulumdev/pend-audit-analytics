@@ -95,7 +95,11 @@ export type AnalyticsInsightId = (typeof ANALYTICS_INSIGHT_CATALOG)[number]["id"
 
 const INSIGHT_BY_ID = new Map(ANALYTICS_INSIGHT_CATALOG.map((row) => [row.id, row]));
 
-function insight(id: AnalyticsInsightId, detail: string): AnalyticsInsight {
+function insight(
+  id: AnalyticsInsightId,
+  detail: string,
+  params: Record<string, unknown>,
+): AnalyticsInsight {
   const row = INSIGHT_BY_ID.get(id);
   if (!row) throw new Error(`unknown insight id: ${id}`);
   return {
@@ -103,6 +107,7 @@ function insight(id: AnalyticsInsightId, detail: string): AnalyticsInsight {
     response: row.response,
     title: row.title,
     detail,
+    params,
     remediation: { engineer: row.engineer, client: row.client },
   };
 }
@@ -128,39 +133,69 @@ function gscPeriodInsights(gsc: GscAnalyticsBundle): AnalyticsInsight[] {
     gsc.previousTotals.impressions,
   );
 
+  const previous = gsc.previousTotals;
   if (clicksDelta <= -DROP_ACTION) {
     out.push(
-      insight(
+      metricDrop(
         "gsc-clicks-drop-action",
-        `Clicks fell ${pct(clicksDelta)} vs the previous period (${fmt(gsc.previousTotals.clicks)} → ${fmt(gsc.totals.clicks)}).`,
+        "Clicks",
+        clicksDelta,
+        previous.clicks,
+        gsc.totals.clicks,
       ),
     );
   } else if (clicksDelta <= -DROP_WATCH) {
     out.push(
-      insight(
+      metricDrop(
         "gsc-clicks-drop-watch",
-        `Clicks fell ${pct(clicksDelta)} vs the previous period (${fmt(gsc.previousTotals.clicks)} → ${fmt(gsc.totals.clicks)}).`,
+        "Clicks",
+        clicksDelta,
+        previous.clicks,
+        gsc.totals.clicks,
       ),
     );
   }
 
   if (impresDelta <= -DROP_ACTION) {
     out.push(
-      insight(
+      metricDrop(
         "gsc-impressions-drop-action",
-        `Impressions fell ${pct(impresDelta)} vs the previous period (${fmt(gsc.previousTotals.impressions)} → ${fmt(gsc.totals.impressions)}).`,
+        "Impressions",
+        impresDelta,
+        previous.impressions,
+        gsc.totals.impressions,
       ),
     );
   } else if (impresDelta <= -DROP_WATCH) {
     out.push(
-      insight(
+      metricDrop(
         "gsc-impressions-drop-watch",
-        `Impressions fell ${pct(impresDelta)} vs the previous period (${fmt(gsc.previousTotals.impressions)} → ${fmt(gsc.totals.impressions)}).`,
+        "Impressions",
+        impresDelta,
+        previous.impressions,
+        gsc.totals.impressions,
       ),
     );
   }
 
   return out;
+}
+
+function metricDrop(
+  id: AnalyticsInsightId,
+  label: "Clicks" | "Impressions" | "Sessions",
+  delta: number,
+  previous: number,
+  current: number,
+): AnalyticsInsight {
+  const percent = pct(delta);
+  const previousText = fmt(previous);
+  const currentText = fmt(current);
+  return insight(
+    id,
+    `${label} fell ${percent} vs the previous period (${previousText} → ${currentText}).`,
+    { percent, previous: previousText, current: currentText },
+  );
 }
 
 function gscCtrOpportunities(gsc: GscAnalyticsBundle): AnalyticsInsight[] {
@@ -186,6 +221,15 @@ function gscCtrOpportunities(gsc: GscAnalyticsBundle): AnalyticsInsight[] {
     insight(
       "gsc-low-ctr-queries",
       `Queries ranking in the top ${MAX_POSITION_FOR_CTR} with weak click-through: ${list}.`,
+      {
+        maxPosition: MAX_POSITION_FOR_CTR,
+        queries: candidates.map((q) => ({
+          query: q.query,
+          impressions: q.impressions,
+          ctr: q.ctr,
+          position: q.position,
+        })),
+      },
     ),
   ];
 }
@@ -198,10 +242,14 @@ function gscPositionWatch(gsc: GscAnalyticsBundle): AnalyticsInsight[] {
     gsc.previousTotals.impressions,
   );
   if (posWorse >= POSITION_WORSE && Math.abs(impresDelta) < DROP_WATCH) {
+    const previous = gsc.previousTotals.position.toFixed(1);
+    const current = gsc.totals.position.toFixed(1);
+    const percent = pct(impresDelta);
     return [
       insight(
         "gsc-position-worse",
-        `Average position moved from ${gsc.previousTotals.position.toFixed(1)} to ${gsc.totals.position.toFixed(1)} while impressions stayed relatively stable (${pct(impresDelta)}).`,
+        `Average position moved from ${previous} to ${current} while impressions stayed relatively stable (${percent}).`,
+        { previous, current, percent },
       ),
     ];
   }
@@ -212,18 +260,25 @@ function ga4PeriodInsights(ga4: Ga4AnalyticsBundle): AnalyticsInsight[] {
   if (!ga4.previousTotals) return [];
   const out: AnalyticsInsight[] = [];
   const sessionsDelta = relativeDelta(ga4.totals.sessions, ga4.previousTotals.sessions);
+  const previous = ga4.previousTotals;
   if (sessionsDelta <= -DROP_ACTION) {
     out.push(
-      insight(
+      metricDrop(
         "ga4-sessions-drop-action",
-        `Sessions fell ${pct(sessionsDelta)} vs the previous period (${fmt(ga4.previousTotals.sessions)} → ${fmt(ga4.totals.sessions)}).`,
+        "Sessions",
+        sessionsDelta,
+        previous.sessions,
+        ga4.totals.sessions,
       ),
     );
   } else if (sessionsDelta <= -DROP_WATCH) {
     out.push(
-      insight(
+      metricDrop(
         "ga4-sessions-drop-watch",
-        `Sessions fell ${pct(sessionsDelta)} vs the previous period (${fmt(ga4.previousTotals.sessions)} → ${fmt(ga4.totals.sessions)}).`,
+        "Sessions",
+        sessionsDelta,
+        previous.sessions,
+        ga4.totals.sessions,
       ),
     );
   }

@@ -169,6 +169,7 @@ function maxRun(): AuditRun {
           response: "action",
           title: "t",
           detail: "d",
+          params: { percent: "-30.0%", previous: "100", current: "70" },
           remediation: { engineer: "e", client: "c" },
         },
       ],
@@ -207,7 +208,11 @@ describe("analytics cap memory", () => {
     assert.equal(mem.rows("engine_analytics_psi_insights").length, PSI_MAX_INSIGHTS * 4);
     assert.equal(mem.rows("engine_analytics_rivals").length, 1);
     assert.equal(sql.includes("audit_run_sections"), false);
-    assert.equal(sql.includes("::jsonb"), false);
+    const jsonb = mem.texts.filter((text) => text.includes("::jsonb"));
+    assert.ok(jsonb.length > 0);
+    for (const text of jsonb) {
+      assert.match(text, /INSERT INTO engine_analytics_(insights|tag_collisions)/);
+    }
     assert.ok(
       delta < HEAP_CEILING_BYTES,
       `heap delta ${delta} exceeds ${HEAP_CEILING_BYTES}`,

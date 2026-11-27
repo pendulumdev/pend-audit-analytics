@@ -162,6 +162,7 @@ function fullAnalytics(query = "old-query"): AuditRun["analytics"] {
           code: "multiple-ga4-ids",
           severity: "watch",
           detail: "old collision",
+          params: { ids: ["G-OLD", "G-KEEP"] },
           urls: [`${SITE}/old`],
         },
       ],
@@ -213,6 +214,7 @@ function fullAnalytics(query = "old-query"): AuditRun["analytics"] {
         response: "watch",
         title: "Old insight",
         detail: "keep",
+        params: { percent: "-12.0%", previous: "10", current: "8" },
         remediation: { engineer: "e", client: "c" },
       },
     ],
@@ -269,6 +271,7 @@ describe("analytics partial refresh", () => {
         response: "action",
         title: "New insight",
         detail: "fresh",
+        params: { percent: "-30.0%", previous: "100", current: "70" },
         remediation: { engineer: "e2", client: "c2" },
       },
     ];
@@ -286,9 +289,9 @@ describe("analytics partial refresh", () => {
     assert.deepEqual(
       runRows(mem, "engine_analytics_insights").map((row) => [
         row.insight_id,
-        row.detail,
+        JSON.parse(String(row.params)),
       ]),
-      [["new", "fresh"]],
+      [["new", { percent: "-30.0%", previous: "100", current: "70" }]],
     );
     assert.deepEqual(
       runRows(mem, "engine_analytics_tag_snippets").map((row) => row.fingerprint),
@@ -406,6 +409,7 @@ describe("analytics partial refresh", () => {
             code: "multiple-gtm",
             severity: "action",
             detail: "new collision",
+            params: { ids: ["GTM-NEW", "GTM-ALT"] },
             urls: [`${SITE}/new`],
           },
         ],
@@ -430,6 +434,13 @@ describe("analytics partial refresh", () => {
         (row) => row.url === `${SITE}/old`,
       ),
       false,
+    );
+    assert.deepEqual(
+      runRows(mem, "engine_analytics_tag_collisions").map((row) => [
+        row.code,
+        JSON.parse(String(row.params)),
+      ]),
+      [["multiple-gtm", { ids: ["GTM-NEW", "GTM-ALT"] }]],
     );
     assert.deepEqual(runRows(mem, "engine_analytics_gtm_containers"), []);
     const events = runRows(mem, "engine_analytics_events");
@@ -630,15 +641,16 @@ describe("analytics partial refresh", () => {
         response: "action",
         title: "New insight",
         detail: "fresh",
+        params: { percent: "-30.0%", previous: "100", current: "70" },
         remediation: { engineer: "e2", client: "c2" },
       },
     ]);
     assert.deepEqual(
       runRows(mem, "engine_analytics_insights").map((row) => [
         row.insight_id,
-        row.detail,
+        JSON.parse(String(row.params)),
       ]),
-      [["new", "fresh"]],
+      [["new", { percent: "-30.0%", previous: "100", current: "70" }]],
     );
     assert.deepEqual(runRows(mem, "engine_analytics_ga4_landing_pages"), landings);
     assert.deepEqual(runRows(mem, "engine_analytics_gsc_queries"), queries);

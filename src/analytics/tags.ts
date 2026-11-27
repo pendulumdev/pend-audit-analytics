@@ -204,6 +204,7 @@ export function collisionsForPage(
       code: "multiple-ga4-ids",
       severity: "action",
       detail: `More than one GA4 ID on the page (${ga4Ids.join(", ")})`,
+      params: { ids: ga4Ids },
       urls: [page.url],
     });
   }
@@ -212,6 +213,7 @@ export function collisionsForPage(
       code: "gtm-plus-standalone-gtag",
       severity: "action",
       detail: "GTM and a standalone gtag.js both load on the page",
+      params: {},
       urls: [page.url],
     });
   }
@@ -220,6 +222,7 @@ export function collisionsForPage(
       code: "multiple-gtm",
       severity: "action",
       detail: `More than one GTM container (${gtmIds.join(", ")})`,
+      params: { ids: gtmIds },
       urls: [page.url],
     });
   }
@@ -228,6 +231,7 @@ export function collisionsForPage(
       code: "ua-leftover",
       severity: "watch",
       detail: `Universal Analytics leftover (${uaIds.join(", ")}) next to GA4`,
+      params: { ids: uaIds },
       urls: [page.url],
     });
   }
@@ -237,6 +241,7 @@ export function collisionsForPage(
       severity: "watch",
       detail:
         "No Google tag IDs in the HTML we fetched. Tags may load after JavaScript (Next.js, consent banner, or GTM).",
+      params: {},
       urls: [page.url],
     });
   }
@@ -641,6 +646,7 @@ export function urlDriftCollision(
     code: "url-drift",
     severity: "watch",
     detail: `Tag setup differs from the homepage on ${paths.join(", ")}`,
+    params: { paths },
     urls: [home.url, ...drifted.map((p) => p.url)],
   };
 }

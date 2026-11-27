@@ -157,6 +157,7 @@ export interface AnalyticsInsight {
   response: AnalyticsInsightResponse;
   title: string;
   detail: string;
+  params?: Record<string, unknown>;
   remediation: RemediationCopy;
 }
 
@@ -210,6 +211,7 @@ export interface GoogleSetupCollision {
   code: GoogleTagCollisionCode;
   severity: "action" | "watch" | "info";
   detail: string;
+  params?: Record<string, unknown>;
   urls?: string[];
 }
 
